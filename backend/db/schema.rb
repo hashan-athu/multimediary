@@ -10,7 +10,7 @@
 #
 # It's strongly recommended that you check this file into your version control system.
 
-ActiveRecord::Schema[8.1].define(version: 2026_01_24_193044) do
+ActiveRecord::Schema[8.1].define(version: 2026_01_24_200412) do
   # These are extensions that must be enabled in order to support this database
   enable_extension "pg_catalog.plpgsql"
 
@@ -57,12 +57,12 @@ ActiveRecord::Schema[8.1].define(version: 2026_01_24_193044) do
     t.datetime "created_at", null: false
     t.bigint "disk_format_id", null: false
     t.string "name"
-    t.string "type"
+    t.string "storage_type"
     t.datetime "updated_at", null: false
     t.index ["disk_format_id"], name: "index_disks_on_disk_format_id"
   end
 
-  create_table "generes", force: :cascade do |t|
+  create_table "genres", force: :cascade do |t|
     t.datetime "created_at", null: false
     t.string "description"
     t.string "name"

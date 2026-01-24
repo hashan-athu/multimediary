@@ -1,0 +1,2 @@
+class DiskFormat < ApplicationRecord
+end

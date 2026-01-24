@@ -14,3 +14,16 @@
 #       methods: [:get, :post, :put, :patch, :delete, :options, :head]
 #   end
 # end
+# 
+Rails.application.config.middleware.insert_before 0, Rack::Cors do
+  allow do
+    # For development, we allow all origins. 
+    # In production, you would change '*' to your actual domain name.
+    origins '*' 
+
+    resource '*',
+      headers: :any,
+      expose: ['Authorization'], # Important so Next.js can read the JWT token from headers
+      methods: [:get, :post, :put, :patch, :delete, :options, :head]
+  end
+end

@@ -1,4 +1,5 @@
 # Rails.application.routes.draw do
+# devise_for :users
 #   # Define your application routes per the DSL in https://guides.rubyonrails.org/routing.html
 
 #   # Reveal health status on /up that returns 200 if the app boots with no exceptions, otherwise 500.
@@ -28,13 +29,25 @@ Rails.application.routes.draw do
       # === ADMIN SIDE ===
       # Endpoints for the Admin Dashboard
       namespace :admin do
-        # We will mount Devise routes here later for Admin Login
+        # Admin Authentication
+        # # Map Devise to our custom JSON controller
+        devise_for :users, 
+                   path: '', 
+                   path_names: {
+                     sign_in: 'login',
+                     sign_out: 'logout',
+                     registration: 'signup'
+                   },
+                   controllers: {
+                     sessions: 'api/v1/admin/sessions'
+                   },
+                   defaults: { format: :json }
         
-        # Admins have full CRUD power
-        resources :movies
-        resources :directors
-        resources :genres
-        # We will add users/dashboard management here later
+
+        
+        devise_scope :api_v1_admin_user do
+           match 'sessions/reset_all', to: 'sessions#reset_all', via: [:delete, :post]
+        end
       end
       
     end

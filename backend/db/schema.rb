@@ -10,7 +10,7 @@
 #
 # It's strongly recommended that you check this file into your version control system.
 
-ActiveRecord::Schema[8.1].define(version: 2026_01_25_074509) do
+ActiveRecord::Schema[8.1].define(version: 2026_05_09_112211) do
   # These are extensions that must be enabled in order to support this database
   enable_extension "pg_catalog.plpgsql"
 
@@ -98,12 +98,14 @@ ActiveRecord::Schema[8.1].define(version: 2026_01_25_074509) do
     t.string "runtime"
     t.text "story"
     t.string "tagline"
+    t.integer "tmdb_id"
     t.datetime "updated_at", null: false
     t.string "version"
     t.integer "year"
     t.index ["category_id"], name: "index_movies_on_category_id"
     t.index ["director_id"], name: "index_movies_on_director_id"
     t.index ["disk_id"], name: "index_movies_on_disk_id"
+    t.index ["tmdb_id"], name: "index_movies_on_tmdb_id", unique: true
   end
 
   create_table "movies_qualities", id: false, force: :cascade do |t|
@@ -128,10 +130,13 @@ ActiveRecord::Schema[8.1].define(version: 2026_01_25_074509) do
 
   create_table "ratings", force: :cascade do |t|
     t.datetime "created_at", null: false
+    t.bigint "movie_id"
     t.string "rating_out_of"
     t.string "rating_value"
     t.bigint "reviewer_id", null: false
     t.datetime "updated_at", null: false
+    t.index ["movie_id", "reviewer_id"], name: "index_ratings_on_movie_id_and_reviewer_id", unique: true
+    t.index ["movie_id"], name: "index_ratings_on_movie_id"
     t.index ["reviewer_id"], name: "index_ratings_on_reviewer_id"
   end
 
@@ -162,5 +167,6 @@ ActiveRecord::Schema[8.1].define(version: 2026_01_25_074509) do
   add_foreign_key "movies", "categories"
   add_foreign_key "movies", "directors"
   add_foreign_key "movies", "disks"
+  add_foreign_key "ratings", "movies"
   add_foreign_key "ratings", "reviewers"
 end

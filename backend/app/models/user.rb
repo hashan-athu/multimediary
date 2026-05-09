@@ -5,8 +5,8 @@ class User < ApplicationRecord
          :recoverable, :jwt_authenticatable, :rememberable, :validatable,
          jwt_revocation_strategy: JwtDenylist
 
-         #Admin Roles
-  enum :role, { super_admin: 'super_admin', admin: 'admin', editor: 'editor', analyst: 'analyst' }, prefix: false, scopes: false
+  # Admin Roles
+  enum :role, { super_admin: "super_admin", admin: "admin", editor: "editor", analyst: "analyst" }, prefix: false, scopes: false
 
   # Set a default role if none is provided
   after_initialize :set_default_role, if: :new_record?
@@ -15,4 +15,3 @@ class User < ApplicationRecord
     self.role ||= :editor
   end
 end
-

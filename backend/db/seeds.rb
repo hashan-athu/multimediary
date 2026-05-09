@@ -55,7 +55,7 @@ def create_movie(title, year, director, category, disk, actors, genres, descript
     m.description = description
     m.language = "English"
   end
-  
+
   # Update associations ensuring no duplicates
   movie.actors = (movie.actors + actors).uniq
   movie.genres = (movie.genres + genres).uniq
@@ -66,48 +66,48 @@ end
 # Movie 1: The Fast and the Furious (2001)
 create_movie(
   "The Fast and the Furious", 2001, rob_cohen, action_category, storage_disk,
-  [vin_diesel, paul_walker, michelle_rodriguez, jordana_brewster],
-  [action_genre, crime_genre, thriller_genre],
+  [ vin_diesel, paul_walker, michelle_rodriguez, jordana_brewster ],
+  [ action_genre, crime_genre, thriller_genre ],
   "Los Angeles police officer Brian O'Conner must decide where his loyalty really lies when he becomes enamored with the street racing world he has been sent undercover to destroy."
 )
 
 # Movie 2: 2 Fast 2 Furious (2003)
 create_movie(
   "2 Fast 2 Furious", 2003, john_singleton, action_category, storage_disk,
-  [paul_walker, tyrese_gibson, ludacris],
-  [action_genre, crime_genre, thriller_genre],
+  [ paul_walker, tyrese_gibson, ludacris ],
+  [ action_genre, crime_genre, thriller_genre ],
   "Former cop Brian O'Conner is called upon to bust a dangerous criminal and he recruits the help of a former childhood friend and street racer who has a chance to redeem himself."
 )
 
 # Movie 3: The Fast and the Furious: Tokyo Drift (2006)
 create_movie(
   "The Fast and the Furious: Tokyo Drift", 2006, justin_lin, action_category, storage_disk,
-  [lucas_black, sung_kang],
-  [action_genre, crime_genre, thriller_genre],
+  [ lucas_black, sung_kang ],
+  [ action_genre, crime_genre, thriller_genre ],
   "A teenager becomes a major competitor in the world of drift racing after moving with his father in Tokyo to avoid a jail sentence in America."
 )
 
 # Movie 4: Fast & Furious (2009)
 create_movie(
   "Fast & Furious", 2009, justin_lin, action_category, storage_disk,
-  [vin_diesel, paul_walker, michelle_rodriguez, jordana_brewster, sung_kang, gal_gadot],
-  [action_genre, crime_genre, thriller_genre],
+  [ vin_diesel, paul_walker, michelle_rodriguez, jordana_brewster, sung_kang, gal_gadot ],
+  [ action_genre, crime_genre, thriller_genre ],
   "Brian O'Conner, back working for the FBI in Los Angeles, teams up with Dominic Toretto to bring down a heroin importer by infiltrating his operation."
 )
 
 # Movie 5: Fast Five (2011)
 create_movie(
   "Fast Five", 2011, justin_lin, action_category, storage_disk,
-  [vin_diesel, paul_walker, jordana_brewster, tyrese_gibson, ludacris, sung_kang, gal_gadot, dwayne_johnson],
-  [action_genre, crime_genre, thriller_genre],
+  [ vin_diesel, paul_walker, jordana_brewster, tyrese_gibson, ludacris, sung_kang, gal_gadot, dwayne_johnson ],
+  [ action_genre, crime_genre, thriller_genre ],
   "Dominic Toretto and his crew of street racers plan a massive heist to buy their freedom while in the sights of a powerful Brazilian drug lord and a dangerous federal agent."
 )
 
 # Movie 6: Fast & Furious 6 (2013)
 create_movie(
   "Fast & Furious 6", 2013, justin_lin, action_category, storage_disk,
-  [vin_diesel, paul_walker, michelle_rodriguez, jordana_brewster, tyrese_gibson, ludacris, sung_kang, gal_gadot, dwayne_johnson],
-  [action_genre, crime_genre, thriller_genre],
+  [ vin_diesel, paul_walker, michelle_rodriguez, jordana_brewster, tyrese_gibson, ludacris, sung_kang, gal_gadot, dwayne_johnson ],
+  [ action_genre, crime_genre, thriller_genre ],
   "Hobbs has Dominic and Brian reassemble their crew to take down a team of mercenaries: Dominic unexpectedly gets sidetracked with facing his presumed deceased girlfriend, Letty."
 )
 

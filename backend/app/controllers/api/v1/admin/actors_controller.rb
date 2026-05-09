@@ -8,8 +8,9 @@ module Api
         load_and_authorize_resource class: Actor
 
         def index
-          @actors = Actor.order(last_name: :asc, first_name: :asc)
+          @actors = Actor.all
           @actors = @actors.ransack(params[:q]).result if params[:q].present?
+          @actors = apply_sort(@actors, default_column: :last_name, default_direction: :asc)
           @actors = paginate(@actors)
 
           render_success({

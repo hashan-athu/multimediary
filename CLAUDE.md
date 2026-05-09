@@ -54,6 +54,7 @@ Copy `.env.example` to `.env`. All config is env-var driven:
 | `BACKEND_DATABASE_PASSWORD` | DB password |
 | `BACKEND_TEST_DATABASE_NAME` | Test database name |
 | `TMDB_API_KEY` | TMDb API key — get one at https://developer.themoviedb.org |
+| `CORS_ALLOWED_ORIGINS` | Comma-separated list of allowed frontend origins (default: `http://localhost:3000`) |
 
 ## Architecture
 
@@ -67,7 +68,9 @@ ApplicationController          (last-resort StandardError rescue → 500)
     └── public controllers
 ```
 
-`BaseController` provides: `paginate(collection)`, `pagination_meta(collection)`, `render_success(data, status:)`.
+`BaseController` provides: `paginate(collection)`, `pagination_meta(collection)`, `render_success(data, status:)`, `apply_sort(scope, default_column:, default_direction:)`.
+
+`apply_sort` validates the sort column against the model's `ransackable_attributes` allowlist, then applies `ORDER BY column direction`. Clients pass `?sort=name&direction=asc`. Currently wired up on movies, actors, directors, and disks index actions.
 
 ### API Namespacing
 
@@ -85,13 +88,16 @@ All routes under `/api/v1`:
 | POST | `/movies/tmdb_import` | import full movie from TMDb |
 | GET/POST/PATCH/DELETE | `/movies/:movie_id/ratings` | ratings nested under movie |
 | GET/POST/PATCH/DELETE | `/actors`, `/directors`, `/genres`, `/categories`, `/qualities`, `/reviewers`, `/disks`, `/disk_formats` | full CRUD |
-| GET/PATCH/DELETE | `/users` | role management (no password changes) |
+| GET/POST/PATCH/DELETE | `/users` | role management; only super_admin can create/destroy |
+| GET | `/dashboard` | summary stats + 8 recent movies (all roles) |
 
 **Public** (`/api/v1/public/`) — no auth:
 | Method | Path | Action |
 |---|---|---|
 | POST | `/auth/session` | placeholder anonymous token |
 | GET | `/movies`, `/movies/:id` | read-only, Ransack search, Kaminari pagination |
+
+**Health check** (no auth): `GET /up` — pings the DB (`SELECT 1`) and returns `{ status, database, timestamp }` or `503` if unreachable.
 
 ### Authentication
 
@@ -187,6 +193,12 @@ Tests use Minitest + FactoryBot. `fixtures :all` is NOT used — all test data i
 
 RuboCop with `rubocop-rails-omakase` preset. Run `bin/rubocop -A` to auto-fix. All files use `# frozen_string_literal: true`.
 
+### Request Middleware
+
+**CORS** (`config/initializers/cors.rb`): `Rack::Cors` scoped to `/api/*`. Allowed origins driven by `CORS_ALLOWED_ORIGINS` env var (comma-separated). Exposes the `Authorization` response header so the browser can read the JWT. `max_age: 600`.
+
+**Rate limiting** (`config/initializers/rack_attack.rb`): `Rack::Attack` with two throttles — login endpoint (5 req/min per IP) and all `/api/*` endpoints (300 req/min per IP). Returns 429 JSON on breach.
+
 ### Seed Data
 
 `db/seeds.rb` is idempotent (`find_or_create_by!`). Seeds: 1 Category, 1 DiskFormat, 1 Disk, 3 Genres, 3 Directors, 10 Actors, 6 Fast & Furious films (2001–2013).
@@ -203,3 +215,4 @@ Kamal + Docker (`config/deploy.yml`). Thruster in front of Puma for HTTP caching
 
 - **No frontend** — Next.js app is planned but not started
 - **Public sessions controller** is a placeholder (returns a static token from credentials); proper public auth (anonymous JWT or API key) not implemented
+- **`file_size` column is a string** — validated as numeric by the model but stored as `string` in the schema. `Movie.sum(:file_size)` will fail in PostgreSQL; use `.pluck(:file_size).sum(&:to_f)` instead (as done in the dashboard). A migration to `decimal` is a future task.

@@ -1,0 +1,1 @@
+{"responses":{"200":{"description":"Login successful — JWT in Authorization response header","headers":{"Authorization":{"schema":{"type":"string"},"description":"Bearer <jwt_token>"}}},"401":{"description":"Invalid credentials"},"403":{"description":"User already has an active session"}}}

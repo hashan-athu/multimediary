@@ -1,0 +1,1 @@
+{"parameters":[{"in":"query","name":"page","schema":{"type":"integer","default":1}},{"in":"query","name":"per_page","schema":{"type":"integer","default":25}},{"in":"query","name":"q[name_cont]","schema":{"type":"string"}},{"in":"query","name":"q[year_eq]","schema":{"type":"integer"}},{"in":"query","name":"q[language_cont]","schema":{"type":"string"}}]}

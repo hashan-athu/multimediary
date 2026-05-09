@@ -59,4 +59,31 @@ class Api::V1::Admin::UsersControllerTest < ActionDispatch::IntegrationTest
     delete api_v1_admin_user_url(@editor), headers: auth_headers_for(@admin)
     assert_response :forbidden
   end
+
+  test "super_admin can create a user" do
+    post api_v1_admin_users_url,
+         params: { user: { email: "new@example.com", password: "password123",
+                           password_confirmation: "password123", role: :editor } },
+         headers: auth_headers_for(@super_admin),
+         as: :json
+    assert_response :created
+    assert User.exists?(email: "new@example.com")
+  end
+
+  test "admin cannot create users" do
+    post api_v1_admin_users_url,
+         params: { user: { email: "new@example.com", password: "password123",
+                           password_confirmation: "password123", role: :editor } },
+         headers: auth_headers_for(@admin),
+         as: :json
+    assert_response :forbidden
+  end
+
+  test "returns 422 on invalid user params" do
+    post api_v1_admin_users_url,
+         params: { user: { email: "not-an-email", password: "short" } },
+         headers: auth_headers_for(@super_admin),
+         as: :json
+    assert_response :unprocessable_entity
+  end
 end

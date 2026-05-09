@@ -1,0 +1,1 @@
+{"title":"Body","body":{"required":true,"content":{"application/json":{"schema":{"type":"object","properties":{"rating":{"type":"object","properties":{"rating_value":{"type":"number"},"rating_out_of":{"type":"number"},"reviewer_id":{"type":"integer"}}}}}}}}}

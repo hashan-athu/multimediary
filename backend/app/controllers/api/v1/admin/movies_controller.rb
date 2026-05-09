@@ -9,8 +9,8 @@ module Api
 
         def index
           @movies = Movie.includes(:category, :disk, :genres, :qualities, :director)
-                         .order(created_at: :desc)
           @movies = @movies.ransack(params[:q]).result if params[:q].present?
+          @movies = apply_sort(@movies)
           @movies = paginate(@movies)
 
           render_success({

@@ -1,0 +1,1816 @@
+openapi: 3.0.3
+
+info:
+  title: Multimediary API
+  description: |
+    REST API for the Multimediary physical media library management system.
+
+    All admin endpoints require a JWT bearer token obtained from `POST /api/v1/admin/login`.
+    Public endpoints require no authentication.
+
+    ## Rate limiting
+
+    - Login endpoint: 5 requests per minute per IP
+    - All `/api/*` endpoints: 300 requests per minute per IP
+
+    Exceeding the limit returns `429 Too Many Requests`.
+  version: 1.0.0
+
+servers:
+  - url: http://localhost:3001
+    description: Local development
+
+tags:
+  - name: Auth
+    description: Login, logout, session management
+  - name: Movies
+    description: Movie catalogue CRUD and TMDb import
+  - name: Ratings
+    description: Movie ratings (nested under movies)
+  - name: Actors
+    description: Actor management
+  - name: Directors
+    description: Director management
+  - name: Disks
+    description: Physical disk management
+  - name: Disk Formats
+    description: Disk format lookup table (DVD, Blu-ray, HDD…)
+  - name: Genres
+    description: Genre lookup table
+  - name: Categories
+    description: Category lookup table (Hollywood, Bollywood…)
+  - name: Qualities
+    description: Quality lookup table (720p, 1080p…)
+  - name: Reviewers
+    description: Reviewer management
+  - name: Users
+    description: Admin user management (super_admin only for write operations)
+  - name: Dashboard
+    description: Aggregated stats for the admin home page
+  - name: Public
+    description: Read-only public endpoints (no auth required)
+  - name: Health
+    description: Service health check
+
+components:
+  securitySchemes:
+    bearerAuth:
+      type: http
+      scheme: bearer
+      bearerFormat: JWT
+
+  schemas:
+    PaginationMeta:
+      type: object
+      properties:
+        current_page: { type: integer, example: 1 }
+        total_pages:  { type: integer, example: 14 }
+        total_count:  { type: integer, example: 342 }
+        per_page:     { type: integer, example: 25 }
+
+    DiskFormat:
+      type: object
+      properties:
+        id:   { type: integer, example: 1 }
+        name: { type: string, example: DVD }
+
+    DiskCompact:
+      type: object
+      properties:
+        id:           { type: integer }
+        name:         { type: string, example: DVD-047 }
+        storage_type: { type: string, example: HDD }
+        disk_format:  { $ref: '#/components/schemas/DiskFormat' }
+
+    Category:
+      type: object
+      properties:
+        id:   { type: integer }
+        name: { type: string, example: Hollywood }
+
+    Genre:
+      type: object
+      properties:
+        id:          { type: integer }
+        name:        { type: string, example: Action }
+        description: { type: string, nullable: true }
+
+    Quality:
+      type: object
+      properties:
+        id:   { type: integer }
+        name: { type: string, example: 1080p }
+
+    Reviewer:
+      type: object
+      properties:
+        id:          { type: integer }
+        name:        { type: string, example: IMDb }
+        website_url: { type: string, nullable: true, example: 'https://www.imdb.com' }
+
+    Rating:
+      type: object
+      properties:
+        id:            { type: integer }
+        rating_value:  { type: number, example: 8.8 }
+        rating_out_of: { type: number, example: 10.0 }
+        reviewer:      { $ref: '#/components/schemas/Reviewer' }
+
+    Actor:
+      type: object
+      properties:
+        id:            { type: integer }
+        first_name:    { type: string, example: Leonardo }
+        last_name:     { type: string, example: DiCaprio }
+        full_name:     { type: string, example: Leonardo DiCaprio }
+        gender:        { type: string, enum: [male, female, other], nullable: true }
+        date_of_birth: { type: string, format: date, nullable: true }
+        nationality:   { type: string, nullable: true }
+        image_url:     { type: string, nullable: true }
+
+    Director:
+      type: object
+      properties:
+        id:            { type: integer }
+        first_name:    { type: string }
+        last_name:     { type: string }
+        full_name:     { type: string }
+        date_of_birth: { type: string, format: date, nullable: true }
+        image_url:     { type: string, nullable: true }
+
+    MovieList:
+      type: object
+      properties:
+        id:         { type: integer }
+        name:       { type: string, example: Inception }
+        year:       { type: integer, example: 2010 }
+        language:   { type: string, example: English, nullable: true }
+        country:    { type: string, example: USA, nullable: true }
+        runtime:    { type: integer, example: 148, description: Minutes, nullable: true }
+        file_size:  { type: number, example: 1456.5, description: Megabytes, nullable: true }
+        version:    { type: string, nullable: true, example: Director's Cut }
+        poster_url: { type: string, nullable: true }
+        tagline:    { type: string, nullable: true }
+        tmdb_id:    { type: integer, nullable: true }
+        category:   { $ref: '#/components/schemas/Category' }
+        disk:       { $ref: '#/components/schemas/DiskCompact' }
+        genres:
+          type: array
+          items: { $ref: '#/components/schemas/Genre' }
+        qualities:
+          type: array
+          items: { $ref: '#/components/schemas/Quality' }
+
+    MovieDetail:
+      allOf:
+        - $ref: '#/components/schemas/MovieList'
+        - type: object
+          properties:
+            description: { type: string, nullable: true }
+            story:        { type: string, nullable: true }
+            director:     { $ref: '#/components/schemas/Director' }
+            actors:
+              type: array
+              items: { $ref: '#/components/schemas/Actor' }
+            ratings:
+              type: array
+              items: { $ref: '#/components/schemas/Rating' }
+
+    Disk:
+      type: object
+      properties:
+        id:           { type: integer }
+        name:         { type: string, example: HDD-02 }
+        storage_type: { type: string, example: HDD }
+        disk_format:  { $ref: '#/components/schemas/DiskFormat' }
+
+    DiskDetail:
+      allOf:
+        - $ref: '#/components/schemas/Disk'
+        - type: object
+          properties:
+            movie_count: { type: integer }
+            movies:
+              type: array
+              items: { $ref: '#/components/schemas/MovieList' }
+
+    User:
+      type: object
+      properties:
+        id:         { type: integer }
+        email:      { type: string, format: email }
+        role:       { type: string, enum: [super_admin, admin, editor, analyst] }
+        created_at: { type: string, format: date-time }
+
+    Error:
+      type: object
+      properties:
+        error:   { type: string, example: Not Found }
+        message: { type: string }
+
+    ValidationError:
+      type: object
+      properties:
+        error:
+          type: string
+          example: Unprocessable Entity
+        errors:
+          type: array
+          items: { type: string }
+          example: ["Name can't be blank", "Year is not a number"]
+
+security:
+  - bearerAuth: []
+
+paths:
+
+  # ── HEALTH ─────────────────────────────────────────────────────────────
+
+  /up:
+    get:
+      tags: [Health]
+      summary: Health check
+      description: Pings the database with SELECT 1. Returns 503 if the database is unreachable.
+      security: []
+      responses:
+        '200':
+          description: Service healthy
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  status:    { type: string, example: ok }
+                  database:  { type: string, example: ok }
+                  timestamp: { type: string, format: date-time }
+        '503':
+          description: Database unreachable
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  status:   { type: string, example: error }
+                  database: { type: string, example: unreachable }
+                  error:    { type: string }
+
+  # ── AUTH ──────────────────────────────────────────────────────────────
+
+  /api/v1/admin/login:
+    post:
+      tags: [Auth]
+      summary: Admin login
+      security: []
+      description: |
+        Authenticates an admin user and returns a JWT in the `Authorization`
+        response header. Extract and store this token for use on all subsequent requests.
+
+        Single-session enforcement: if the user already has an active session,
+        returns `403 Forbidden`. Call `DELETE /api/v1/admin/logout` first to clear it.
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              required: [user]
+              properties:
+                user:
+                  type: object
+                  required: [email, password]
+                  properties:
+                    email:    { type: string, format: email, example: admin@example.com }
+                    password: { type: string, example: password123 }
+      responses:
+        '200':
+          description: Login successful — JWT in Authorization response header
+          headers:
+            Authorization:
+              schema: { type: string }
+              description: Bearer <jwt_token>
+        '401':
+          description: Invalid credentials
+        '403':
+          description: User already has an active session
+
+  /api/v1/admin/logout:
+    delete:
+      tags: [Auth]
+      summary: Admin logout
+      description: Revokes the current JWT and clears the active session.
+      responses:
+        '200': { description: Logged out successfully }
+        '401': { description: Not authenticated }
+
+  /api/v1/admin/sessions/reset_all:
+    post:
+      tags: [Auth]
+      summary: Reset all sessions
+      description: Revokes every active session across all users. Requires super_admin role.
+      responses:
+        '200': { description: All sessions revoked }
+        '403': { description: Forbidden — super_admin role required }
+
+  # ── DASHBOARD ─────────────────────────────────────────────────────────
+
+  /api/v1/admin/dashboard:
+    get:
+      tags: [Dashboard]
+      summary: Admin dashboard stats
+      description: |
+        Returns aggregated stats and the 8 most recently added movies.
+        Accessible to all authenticated roles (super_admin, admin, editor, analyst).
+      responses:
+        '200':
+          description: Dashboard data
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  stats:
+                    type: object
+                    properties:
+                      movies:
+                        type: object
+                        properties:
+                          total:        { type: integer, example: 342 }
+                          by_category:
+                            type: array
+                            items:
+                              type: object
+                              properties:
+                                name:  { type: string, example: Hollywood }
+                                count: { type: integer, example: 210 }
+                          by_format:
+                            type: array
+                            items:
+                              type: object
+                              properties:
+                                name:  { type: string, example: Blu-ray }
+                                count: { type: integer, example: 145 }
+                          without_disk: { type: integer, example: 3 }
+                      disks:
+                        type: object
+                        properties:
+                          total: { type: integer, example: 12 }
+                          by_format:
+                            type: array
+                            items:
+                              type: object
+                              properties:
+                                name:  { type: string }
+                                count: { type: integer }
+                      people:
+                        type: object
+                        properties:
+                          actors:    { type: integer, example: 89 }
+                          directors: { type: integer, example: 34 }
+                      storage:
+                        type: object
+                        properties:
+                          total_gb: { type: number, example: 1843.25 }
+                  recent_movies:
+                    type: array
+                    maxItems: 8
+                    items: { $ref: '#/components/schemas/MovieList' }
+        '401': { description: Not authenticated }
+
+  # ── MOVIES ────────────────────────────────────────────────────────────
+
+  /api/v1/admin/movies:
+    get:
+      tags: [Movies]
+      summary: List movies
+      description: |
+        Returns a paginated list of movies. Supports Ransack search via
+        `q[field_predicate]=value` and simple sorting via `sort` + `direction`.
+      parameters:
+        - in: query
+          name: page
+          schema: { type: integer, default: 1 }
+        - in: query
+          name: per_page
+          schema: { type: integer, default: 25 }
+        - in: query
+          name: sort
+          schema: { type: string, example: name }
+          description: Column to sort by. Must be in the Movie ransackable_attributes allowlist.
+        - in: query
+          name: direction
+          schema: { type: string, enum: [asc, desc], default: desc }
+        - in: query
+          name: "q[name_cont]"
+          schema: { type: string }
+          description: Name contains value
+        - in: query
+          name: "q[year_eq]"
+          schema: { type: integer }
+          description: Exact year match
+        - in: query
+          name: "q[language_cont]"
+          schema: { type: string }
+        - in: query
+          name: "q[s]"
+          schema: { type: string, example: "year desc" }
+          description: Ransack sort (alternative to sort + direction params)
+      responses:
+        '200':
+          description: Paginated movie list
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  movies:
+                    type: array
+                    items: { $ref: '#/components/schemas/MovieList' }
+                  meta: { $ref: '#/components/schemas/PaginationMeta' }
+        '401': { description: Not authenticated }
+
+    post:
+      tags: [Movies]
+      summary: Create a movie (manual)
+      description: Create a movie by providing all fields manually. For TMDb-assisted creation use `/movies/tmdb_import`.
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              required: [movie]
+              properties:
+                movie:
+                  type: object
+                  required: [name, disk_id, category_id, director_id]
+                  properties:
+                    name:        { type: string, example: Inception }
+                    year:        { type: integer, example: 2010 }
+                    language:    { type: string, example: English }
+                    country:     { type: string, example: USA }
+                    description: { type: string }
+                    story:       { type: string }
+                    tagline:     { type: string }
+                    runtime:     { type: integer, example: 148, description: Minutes }
+                    file_size:   { type: number, example: 1456.5, description: Megabytes }
+                    version:     { type: string, example: Director's Cut }
+                    poster_url:  { type: string }
+                    tmdb_id:     { type: integer }
+                    disk_id:     { type: integer }
+                    category_id: { type: integer }
+                    director_id: { type: integer }
+                    actor_ids:
+                      type: array
+                      items: { type: integer }
+                    genre_ids:
+                      type: array
+                      items: { type: integer }
+                    quality_ids:
+                      type: array
+                      items: { type: integer }
+      responses:
+        '201':
+          description: Movie created
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  movie: { $ref: '#/components/schemas/MovieDetail' }
+        '422':
+          description: Validation error
+          content:
+            application/json:
+              schema: { $ref: '#/components/schemas/ValidationError' }
+
+  /api/v1/admin/movies/{id}:
+    parameters:
+      - in: path
+        name: id
+        required: true
+        schema: { type: integer }
+    get:
+      tags: [Movies]
+      summary: Get movie detail
+      responses:
+        '200':
+          description: Full movie detail
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  movie: { $ref: '#/components/schemas/MovieDetail' }
+        '404':
+          description: Not found
+          content:
+            application/json:
+              schema: { $ref: '#/components/schemas/Error' }
+    patch:
+      tags: [Movies]
+      summary: Update a movie
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              properties:
+                movie:
+                  type: object
+                  properties:
+                    name:        { type: string }
+                    year:        { type: integer }
+                    language:    { type: string }
+                    country:     { type: string }
+                    description: { type: string }
+                    story:       { type: string }
+                    tagline:     { type: string }
+                    runtime:     { type: integer }
+                    file_size:   { type: number }
+                    version:     { type: string }
+                    poster_url:  { type: string }
+                    disk_id:     { type: integer }
+                    category_id: { type: integer }
+                    director_id: { type: integer }
+                    actor_ids:   { type: array, items: { type: integer } }
+                    genre_ids:   { type: array, items: { type: integer } }
+                    quality_ids: { type: array, items: { type: integer } }
+      responses:
+        '200':
+          description: Movie updated
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  movie: { $ref: '#/components/schemas/MovieDetail' }
+        '422':
+          description: Validation error
+          content:
+            application/json:
+              schema: { $ref: '#/components/schemas/ValidationError' }
+    delete:
+      tags: [Movies]
+      summary: Delete a movie
+      responses:
+        '200': { description: Movie deleted }
+        '403': { description: Forbidden — admin role required }
+        '404': { description: Not found }
+
+  /api/v1/admin/movies/tmdb_search:
+    post:
+      tags: [Movies]
+      summary: Search TMDb by title
+      description: |
+        Returns raw TMDb search results. Use the `id` field from each result as
+        `tmdb_id` in the import call. No database records are created by this endpoint.
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              required: [query]
+              properties:
+                query: { type: string, example: Inception }
+      responses:
+        '200':
+          description: TMDb search results
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  results:
+                    type: array
+                    items:
+                      type: object
+                      properties:
+                        id:           { type: integer, description: Use as tmdb_id in import }
+                        title:        { type: string }
+                        release_date: { type: string, example: '2010-07-16' }
+                        overview:     { type: string }
+                        poster_path:  { type: string, nullable: true }
+        '400':
+          description: Missing required query param
+        '502':
+          description: TMDb API unreachable or returned an error
+
+  /api/v1/admin/movies/tmdb_import:
+    post:
+      tags: [Movies]
+      summary: Import a movie from TMDb
+      description: |
+        Fetches full metadata from TMDb and creates the movie record in a
+        single transaction. Director, actors, and genres are found or created
+        automatically — no duplicates.
+
+        Returns `409 Conflict` (with the existing movie body) if a movie with
+        that `tmdb_id` is already in the database.
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              required: [tmdb_id, disk_id, category_id]
+              properties:
+                tmdb_id:     { type: integer, example: 27205 }
+                disk_id:     { type: integer }
+                category_id: { type: integer }
+      responses:
+        '201':
+          description: Movie imported and created
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  movie: { $ref: '#/components/schemas/MovieDetail' }
+        '409':
+          description: Movie already imported
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  error:   { type: string, example: Conflict }
+                  message: { type: string, example: Movie already imported }
+                  movie:   { $ref: '#/components/schemas/MovieDetail' }
+        '502':
+          description: TMDb API unreachable or returned an error
+
+  # ── RATINGS ───────────────────────────────────────────────────────────
+
+  /api/v1/admin/movies/{movie_id}/ratings:
+    parameters:
+      - in: path
+        name: movie_id
+        required: true
+        schema: { type: integer }
+    get:
+      tags: [Ratings]
+      summary: List ratings for a movie
+      responses:
+        '200':
+          description: All ratings for the movie
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  ratings:
+                    type: array
+                    items: { $ref: '#/components/schemas/Rating' }
+        '404': { description: Movie not found }
+    post:
+      tags: [Ratings]
+      summary: Add a rating to a movie
+      description: |
+        One rating per reviewer per movie is enforced by a unique database constraint.
+        Returns 422 if the reviewer has already rated this movie.
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              required: [rating]
+              properties:
+                rating:
+                  type: object
+                  required: [rating_value, rating_out_of, reviewer_id]
+                  properties:
+                    rating_value:  { type: number, example: 8.8 }
+                    rating_out_of: { type: number, example: 10.0 }
+                    reviewer_id:   { type: integer }
+      responses:
+        '201':
+          description: Rating created
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  rating: { $ref: '#/components/schemas/Rating' }
+        '422':
+          description: Validation error
+          content:
+            application/json:
+              schema: { $ref: '#/components/schemas/ValidationError' }
+
+  /api/v1/admin/movies/{movie_id}/ratings/{id}:
+    parameters:
+      - in: path
+        name: movie_id
+        required: true
+        schema: { type: integer }
+      - in: path
+        name: id
+        required: true
+        schema: { type: integer }
+    patch:
+      tags: [Ratings]
+      summary: Update a rating
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              properties:
+                rating:
+                  type: object
+                  properties:
+                    rating_value:  { type: number }
+                    rating_out_of: { type: number }
+                    reviewer_id:   { type: integer }
+      responses:
+        '200':
+          description: Rating updated
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  rating: { $ref: '#/components/schemas/Rating' }
+        '404': { description: Rating not found on this movie }
+    delete:
+      tags: [Ratings]
+      summary: Delete a rating
+      responses:
+        '200': { description: Rating deleted }
+        '404': { description: Rating not found on this movie }
+
+  # ── ACTORS ────────────────────────────────────────────────────────────
+
+  /api/v1/admin/actors:
+    get:
+      tags: [Actors]
+      summary: List actors
+      parameters:
+        - in: query
+          name: page
+          schema: { type: integer, default: 1 }
+        - in: query
+          name: per_page
+          schema: { type: integer, default: 25 }
+        - in: query
+          name: sort
+          schema: { type: string, example: last_name }
+        - in: query
+          name: direction
+          schema: { type: string, enum: [asc, desc], default: asc }
+        - in: query
+          name: "q[first_name_or_last_name_cont]"
+          schema: { type: string }
+        - in: query
+          name: "q[nationality_eq]"
+          schema: { type: string }
+      responses:
+        '200':
+          description: Paginated actors list
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  actors:
+                    type: array
+                    items: { $ref: '#/components/schemas/Actor' }
+                  meta: { $ref: '#/components/schemas/PaginationMeta' }
+    post:
+      tags: [Actors]
+      summary: Create an actor
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              required: [actor]
+              properties:
+                actor:
+                  type: object
+                  required: [first_name]
+                  properties:
+                    first_name:    { type: string }
+                    last_name:     { type: string }
+                    gender:        { type: string, enum: [male, female, other] }
+                    date_of_birth: { type: string, format: date }
+                    nationality:   { type: string }
+                    image_url:     { type: string }
+      responses:
+        '201':
+          description: Actor created
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  actor: { $ref: '#/components/schemas/Actor' }
+        '422':
+          description: Validation error
+          content:
+            application/json:
+              schema: { $ref: '#/components/schemas/ValidationError' }
+
+  /api/v1/admin/actors/{id}:
+    parameters:
+      - in: path
+        name: id
+        required: true
+        schema: { type: integer }
+    get:
+      tags: [Actors]
+      summary: Get an actor
+      responses:
+        '200':
+          description: Actor detail
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  actor: { $ref: '#/components/schemas/Actor' }
+        '404': { description: Not found }
+    patch:
+      tags: [Actors]
+      summary: Update an actor
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              properties:
+                actor:
+                  type: object
+                  properties:
+                    first_name:    { type: string }
+                    last_name:     { type: string }
+                    gender:        { type: string, enum: [male, female, other] }
+                    date_of_birth: { type: string, format: date }
+                    nationality:   { type: string }
+                    image_url:     { type: string }
+      responses:
+        '200':
+          description: Actor updated
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  actor: { $ref: '#/components/schemas/Actor' }
+        '422': { description: Validation error }
+    delete:
+      tags: [Actors]
+      summary: Delete an actor
+      responses:
+        '200': { description: Actor deleted }
+        '403': { description: Forbidden }
+        '404': { description: Not found }
+
+  # ── DIRECTORS ─────────────────────────────────────────────────────────
+
+  /api/v1/admin/directors:
+    get:
+      tags: [Directors]
+      summary: List directors
+      parameters:
+        - in: query
+          name: page
+          schema: { type: integer, default: 1 }
+        - in: query
+          name: per_page
+          schema: { type: integer, default: 25 }
+        - in: query
+          name: sort
+          schema: { type: string, example: last_name }
+        - in: query
+          name: direction
+          schema: { type: string, enum: [asc, desc], default: asc }
+        - in: query
+          name: "q[first_name_or_last_name_cont]"
+          schema: { type: string }
+      responses:
+        '200':
+          description: Paginated directors list
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  directors:
+                    type: array
+                    items: { $ref: '#/components/schemas/Director' }
+                  meta: { $ref: '#/components/schemas/PaginationMeta' }
+    post:
+      tags: [Directors]
+      summary: Create a director
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              required: [director]
+              properties:
+                director:
+                  type: object
+                  required: [first_name, last_name]
+                  properties:
+                    first_name:    { type: string }
+                    last_name:     { type: string }
+                    date_of_birth: { type: string, format: date }
+                    image_url:     { type: string }
+      responses:
+        '201':
+          description: Director created
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  director: { $ref: '#/components/schemas/Director' }
+        '422':
+          description: Validation error
+          content:
+            application/json:
+              schema: { $ref: '#/components/schemas/ValidationError' }
+
+  /api/v1/admin/directors/{id}:
+    parameters:
+      - in: path
+        name: id
+        required: true
+        schema: { type: integer }
+    get:
+      tags: [Directors]
+      summary: Get a director
+      responses:
+        '200':
+          description: Director detail
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  director: { $ref: '#/components/schemas/Director' }
+        '404': { description: Not found }
+    patch:
+      tags: [Directors]
+      summary: Update a director
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              properties:
+                director:
+                  type: object
+                  properties:
+                    first_name:    { type: string }
+                    last_name:     { type: string }
+                    date_of_birth: { type: string, format: date }
+                    image_url:     { type: string }
+      responses:
+        '200':
+          description: Director updated
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  director: { $ref: '#/components/schemas/Director' }
+    delete:
+      tags: [Directors]
+      summary: Delete a director
+      responses:
+        '200': { description: Director deleted }
+        '404': { description: Not found }
+
+  # ── GENRES ────────────────────────────────────────────────────────────
+
+  /api/v1/admin/genres:
+    get:
+      tags: [Genres]
+      summary: List genres
+      parameters:
+        - in: query
+          name: page
+          schema: { type: integer, default: 1 }
+        - in: query
+          name: per_page
+          schema: { type: integer, default: 25 }
+      responses:
+        '200':
+          description: Genres list
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  genres:
+                    type: array
+                    items: { $ref: '#/components/schemas/Genre' }
+                  meta: { $ref: '#/components/schemas/PaginationMeta' }
+    post:
+      tags: [Genres]
+      summary: Create a genre
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              required: [genre]
+              properties:
+                genre:
+                  type: object
+                  required: [name]
+                  properties:
+                    name:        { type: string, example: Action }
+                    description: { type: string }
+      responses:
+        '201':
+          description: Genre created
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  genre: { $ref: '#/components/schemas/Genre' }
+        '422':
+          description: Validation error
+          content:
+            application/json:
+              schema: { $ref: '#/components/schemas/ValidationError' }
+
+  /api/v1/admin/genres/{id}:
+    parameters:
+      - in: path
+        name: id
+        required: true
+        schema: { type: integer }
+    get:
+      tags: [Genres]
+      summary: Get a genre
+      responses:
+        '200':
+          description: Genre
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  genre: { $ref: '#/components/schemas/Genre' }
+    patch:
+      tags: [Genres]
+      summary: Update a genre
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              properties:
+                genre:
+                  type: object
+                  properties:
+                    name:        { type: string }
+                    description: { type: string }
+      responses:
+        '200':
+          description: Genre updated
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  genre: { $ref: '#/components/schemas/Genre' }
+    delete:
+      tags: [Genres]
+      summary: Delete a genre
+      description: Returns 422 if the genre has associated movies.
+      responses:
+        '200': { description: Genre deleted }
+        '403': { description: Forbidden — admin role required }
+        '422': { description: Cannot delete — genre has associated movies }
+
+  # ── CATEGORIES ────────────────────────────────────────────────────────
+
+  /api/v1/admin/categories:
+    get:
+      tags: [Categories]
+      summary: List categories
+      parameters:
+        - in: query
+          name: page
+          schema: { type: integer, default: 1 }
+        - in: query
+          name: per_page
+          schema: { type: integer, default: 25 }
+      responses:
+        '200':
+          description: Categories list
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  categories:
+                    type: array
+                    items: { $ref: '#/components/schemas/Category' }
+                  meta: { $ref: '#/components/schemas/PaginationMeta' }
+    post:
+      tags: [Categories]
+      summary: Create a category
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              required: [category]
+              properties:
+                category:
+                  type: object
+                  required: [name]
+                  properties:
+                    name: { type: string, example: Hollywood }
+      responses:
+        '201':
+          description: Category created
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  category: { $ref: '#/components/schemas/Category' }
+        '422':
+          description: Validation error
+          content:
+            application/json:
+              schema: { $ref: '#/components/schemas/ValidationError' }
+
+  /api/v1/admin/categories/{id}:
+    parameters:
+      - in: path
+        name: id
+        required: true
+        schema: { type: integer }
+    get:
+      tags: [Categories]
+      summary: Get a category
+      responses:
+        '200':
+          description: Category
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  category: { $ref: '#/components/schemas/Category' }
+    patch:
+      tags: [Categories]
+      summary: Update a category
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              properties:
+                category:
+                  type: object
+                  properties:
+                    name: { type: string }
+      responses:
+        '200':
+          description: Category updated
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  category: { $ref: '#/components/schemas/Category' }
+    delete:
+      tags: [Categories]
+      summary: Delete a category
+      description: Returns 422 if the category has associated movies.
+      responses:
+        '200': { description: Category deleted }
+        '403': { description: Forbidden — admin role required }
+        '422': { description: Cannot delete — has associated movies }
+
+  # ── QUALITIES ─────────────────────────────────────────────────────────
+
+  /api/v1/admin/qualities:
+    get:
+      tags: [Qualities]
+      summary: List qualities
+      responses:
+        '200':
+          description: All qualities
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  qualities:
+                    type: array
+                    items: { $ref: '#/components/schemas/Quality' }
+                  meta: { $ref: '#/components/schemas/PaginationMeta' }
+    post:
+      tags: [Qualities]
+      summary: Create a quality
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              required: [quality]
+              properties:
+                quality:
+                  type: object
+                  required: [name]
+                  properties:
+                    name: { type: string, example: 1080p }
+      responses:
+        '201':
+          description: Quality created
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  quality: { $ref: '#/components/schemas/Quality' }
+
+  /api/v1/admin/qualities/{id}:
+    parameters:
+      - in: path
+        name: id
+        required: true
+        schema: { type: integer }
+    get:
+      tags: [Qualities]
+      summary: Get a quality
+      responses:
+        '200':
+          description: Quality
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  quality: { $ref: '#/components/schemas/Quality' }
+    patch:
+      tags: [Qualities]
+      summary: Update a quality
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              properties:
+                quality:
+                  type: object
+                  properties:
+                    name: { type: string }
+      responses:
+        '200':
+          description: Quality updated
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  quality: { $ref: '#/components/schemas/Quality' }
+    delete:
+      tags: [Qualities]
+      summary: Delete a quality
+      description: Returns 422 if the quality has associated movies.
+      responses:
+        '200': { description: Quality deleted }
+        '403': { description: Forbidden — admin role required }
+        '422': { description: Cannot delete — has associated movies }
+
+  # ── REVIEWERS ─────────────────────────────────────────────────────────
+
+  /api/v1/admin/reviewers:
+    get:
+      tags: [Reviewers]
+      summary: List reviewers
+      parameters:
+        - in: query
+          name: page
+          schema: { type: integer, default: 1 }
+        - in: query
+          name: per_page
+          schema: { type: integer, default: 25 }
+      responses:
+        '200':
+          description: Reviewers list
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  reviewers:
+                    type: array
+                    items: { $ref: '#/components/schemas/Reviewer' }
+                  meta: { $ref: '#/components/schemas/PaginationMeta' }
+    post:
+      tags: [Reviewers]
+      summary: Create a reviewer
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              required: [reviewer]
+              properties:
+                reviewer:
+                  type: object
+                  required: [name]
+                  properties:
+                    name:        { type: string, example: IMDb }
+                    website_url: { type: string, example: 'https://www.imdb.com' }
+      responses:
+        '201':
+          description: Reviewer created
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  reviewer: { $ref: '#/components/schemas/Reviewer' }
+
+  /api/v1/admin/reviewers/{id}:
+    parameters:
+      - in: path
+        name: id
+        required: true
+        schema: { type: integer }
+    get:
+      tags: [Reviewers]
+      summary: Get a reviewer
+      responses:
+        '200':
+          description: Reviewer
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  reviewer: { $ref: '#/components/schemas/Reviewer' }
+    patch:
+      tags: [Reviewers]
+      summary: Update a reviewer
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              properties:
+                reviewer:
+                  type: object
+                  properties:
+                    name:        { type: string }
+                    website_url: { type: string }
+      responses:
+        '200':
+          description: Reviewer updated
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  reviewer: { $ref: '#/components/schemas/Reviewer' }
+    delete:
+      tags: [Reviewers]
+      summary: Delete a reviewer
+      responses:
+        '200': { description: Reviewer deleted }
+        '403': { description: Forbidden — admin role required }
+
+  # ── DISKS ─────────────────────────────────────────────────────────────
+
+  /api/v1/admin/disks:
+    get:
+      tags: [Disks]
+      summary: List disks
+      parameters:
+        - in: query
+          name: page
+          schema: { type: integer, default: 1 }
+        - in: query
+          name: per_page
+          schema: { type: integer, default: 25 }
+        - in: query
+          name: sort
+          schema: { type: string, example: name }
+        - in: query
+          name: direction
+          schema: { type: string, enum: [asc, desc], default: asc }
+        - in: query
+          name: "q[name_cont]"
+          schema: { type: string }
+        - in: query
+          name: "q[storage_type_eq]"
+          schema: { type: string, example: HDD }
+      responses:
+        '200':
+          description: Paginated disk list
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  disks:
+                    type: array
+                    items: { $ref: '#/components/schemas/Disk' }
+                  meta: { $ref: '#/components/schemas/PaginationMeta' }
+    post:
+      tags: [Disks]
+      summary: Create a disk
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              required: [disk]
+              properties:
+                disk:
+                  type: object
+                  required: [name, storage_type, disk_format_id]
+                  properties:
+                    name:           { type: string, example: HDD-03 }
+                    storage_type:   { type: string, example: HDD }
+                    disk_format_id: { type: integer }
+      responses:
+        '201':
+          description: Disk created
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  disk: { $ref: '#/components/schemas/Disk' }
+
+  /api/v1/admin/disks/{id}:
+    parameters:
+      - in: path
+        name: id
+        required: true
+        schema: { type: integer }
+    get:
+      tags: [Disks]
+      summary: Get disk detail (includes all movies on this disk)
+      responses:
+        '200':
+          description: Disk detail with full movie list
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  disk: { $ref: '#/components/schemas/DiskDetail' }
+        '404': { description: Not found }
+    patch:
+      tags: [Disks]
+      summary: Update a disk
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              properties:
+                disk:
+                  type: object
+                  properties:
+                    name:           { type: string }
+                    storage_type:   { type: string }
+                    disk_format_id: { type: integer }
+      responses:
+        '200':
+          description: Disk updated
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  disk: { $ref: '#/components/schemas/Disk' }
+    delete:
+      tags: [Disks]
+      summary: Delete a disk
+      description: Returns 422 if the disk has movies on it.
+      responses:
+        '200': { description: Disk deleted }
+        '403': { description: Forbidden — admin role required }
+        '422': { description: Cannot delete — disk has associated movies }
+
+  # ── DISK FORMATS ──────────────────────────────────────────────────────
+
+  /api/v1/admin/disk_formats:
+    get:
+      tags: [Disk Formats]
+      summary: List disk formats
+      responses:
+        '200':
+          description: All disk formats
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  disk_formats:
+                    type: array
+                    items: { $ref: '#/components/schemas/DiskFormat' }
+                  meta: { $ref: '#/components/schemas/PaginationMeta' }
+    post:
+      tags: [Disk Formats]
+      summary: Create a disk format
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              required: [disk_format]
+              properties:
+                disk_format:
+                  type: object
+                  required: [name]
+                  properties:
+                    name: { type: string, example: Blu-ray }
+      responses:
+        '201':
+          description: DiskFormat created
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  disk_format: { $ref: '#/components/schemas/DiskFormat' }
+
+  /api/v1/admin/disk_formats/{id}:
+    parameters:
+      - in: path
+        name: id
+        required: true
+        schema: { type: integer }
+    get:
+      tags: [Disk Formats]
+      summary: Get a disk format
+      responses:
+        '200':
+          description: DiskFormat
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  disk_format: { $ref: '#/components/schemas/DiskFormat' }
+    patch:
+      tags: [Disk Formats]
+      summary: Update a disk format
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              properties:
+                disk_format:
+                  type: object
+                  properties:
+                    name: { type: string }
+      responses:
+        '200':
+          description: DiskFormat updated
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  disk_format: { $ref: '#/components/schemas/DiskFormat' }
+    delete:
+      tags: [Disk Formats]
+      summary: Delete a disk format
+      description: Returns 422 if any disks use this format.
+      responses:
+        '200': { description: DiskFormat deleted }
+        '403': { description: Forbidden — admin role required }
+        '422': { description: Cannot delete — has associated disks }
+
+  # ── USERS ─────────────────────────────────────────────────────────────
+
+  /api/v1/admin/users:
+    get:
+      tags: [Users]
+      summary: List admin users
+      description: Accessible by super_admin and admin only.
+      parameters:
+        - in: query
+          name: page
+          schema: { type: integer, default: 1 }
+        - in: query
+          name: per_page
+          schema: { type: integer, default: 25 }
+      responses:
+        '200':
+          description: Admin users list
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  users:
+                    type: array
+                    items: { $ref: '#/components/schemas/User' }
+                  meta: { $ref: '#/components/schemas/PaginationMeta' }
+        '403': { description: Forbidden }
+    post:
+      tags: [Users]
+      summary: Create an admin user
+      description: super_admin only. New users are assigned the editor role by default.
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              required: [user]
+              properties:
+                user:
+                  type: object
+                  required: [email, password, password_confirmation]
+                  properties:
+                    email:                 { type: string, format: email }
+                    password:              { type: string, minLength: 8 }
+                    password_confirmation: { type: string }
+                    role:
+                      type: string
+                      enum: [super_admin, admin, editor, analyst]
+                      default: editor
+      responses:
+        '201':
+          description: User created
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  user: { $ref: '#/components/schemas/User' }
+        '403': { description: Forbidden — super_admin role required }
+        '422':
+          description: Validation error
+          content:
+            application/json:
+              schema: { $ref: '#/components/schemas/ValidationError' }
+
+  /api/v1/admin/users/{id}:
+    parameters:
+      - in: path
+        name: id
+        required: true
+        schema: { type: integer }
+    get:
+      tags: [Users]
+      summary: Get a user
+      description: Accessible by super_admin and admin.
+      responses:
+        '200':
+          description: User detail
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  user: { $ref: '#/components/schemas/User' }
+        '404': { description: Not found }
+    patch:
+      tags: [Users]
+      summary: Update a user's role
+      description: super_admin only. A super_admin cannot demote themselves.
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              required: [user]
+              properties:
+                user:
+                  type: object
+                  properties:
+                    role:
+                      type: string
+                      enum: [super_admin, admin, editor, analyst]
+      responses:
+        '200':
+          description: Role updated
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  user: { $ref: '#/components/schemas/User' }
+        '403': { description: Forbidden }
+        '422': { description: Cannot demote yourself }
+    delete:
+      tags: [Users]
+      summary: Delete a user
+      description: super_admin only.
+      responses:
+        '200': { description: User deleted }
+        '403': { description: Forbidden — super_admin role required }
+
+  # ── PUBLIC ────────────────────────────────────────────────────────────
+
+  /api/v1/public/auth/session:
+    post:
+      tags: [Public]
+      summary: Get a public session token (placeholder)
+      description: |
+        Returns a static anonymous token. This is a placeholder for future
+        public authentication. The token is not currently validated on public requests.
+      security: []
+      responses:
+        '201':
+          description: Token issued
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  token: { type: string }
+
+  /api/v1/public/movies:
+    get:
+      tags: [Public]
+      summary: List movies (public, no auth required)
+      security: []
+      parameters:
+        - in: query
+          name: page
+          schema: { type: integer, default: 1 }
+        - in: query
+          name: per_page
+          schema: { type: integer, default: 25 }
+        - in: query
+          name: "q[name_cont]"
+          schema: { type: string }
+        - in: query
+          name: "q[year_eq]"
+          schema: { type: integer }
+        - in: query
+          name: "q[language_cont]"
+          schema: { type: string }
+      responses:
+        '200':
+          description: Paginated public movie list
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  movies:
+                    type: array
+                    items: { $ref: '#/components/schemas/MovieList' }
+                  meta: { $ref: '#/components/schemas/PaginationMeta' }
+
+  /api/v1/public/movies/{id}:
+    parameters:
+      - in: path
+        name: id
+        required: true
+        schema: { type: integer }
+    get:
+      tags: [Public]
+      summary: Get movie detail (public, no auth required)
+      security: []
+      responses:
+        '200':
+          description: Movie detail
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  movie: { $ref: '#/components/schemas/MovieDetail' }
+        '404':
+          description: Not found
+          content:
+            application/json:
+              schema: { $ref: '#/components/schemas/Error' }

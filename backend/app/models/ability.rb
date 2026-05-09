@@ -13,17 +13,20 @@ class Ability
     when "admin"
       can :manage, [ Movie, Actor, Director, Genre, Category, Quality,
                      Disk, DiskFormat, Reviewer, Rating ]
+      can :read, :dashboard
       can :read, User
       cannot :destroy, User
 
     when "editor"
       can :manage, [ Movie, Actor, Director, Genre, Category, Quality,
                      Disk, DiskFormat, Reviewer, Rating ]
+      can :read, :dashboard
       cannot :destroy, [ Disk, DiskFormat, Category, Genre, Quality, Reviewer ]
 
     when "analyst"
       can :read, [ Movie, Actor, Director, Genre, Category, Quality,
                    Disk, DiskFormat, Reviewer, Rating ]
+      can :read, :dashboard
     end
   end
 end

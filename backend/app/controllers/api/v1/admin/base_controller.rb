@@ -50,6 +50,16 @@ module Api
             per_page: collection.limit_value
           }
         end
+
+        def apply_sort(scope, default_column: :created_at, default_direction: :desc)
+          column    = params[:sort].presence || default_column
+          direction = params[:direction].presence&.downcase == "asc" ? :asc : :desc
+
+          allowed = scope.klass.try(:ransackable_attributes) || []
+          return scope.order(default_column => default_direction) unless allowed.include?(column.to_s)
+
+          scope.order(column => direction)
+        end
       end
     end
   end

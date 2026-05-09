@@ -1,0 +1,1 @@
+{"responses":{"201":{"description":"DiskFormat created","content":{"application/json":{"schema":{"type":"object","properties":{"disk_format":{"type":"object","properties":{"id":{"type":"integer","example":1},"name":{"type":"string","example":"DVD"}},"title":"DiskFormat"}}}}}}}}

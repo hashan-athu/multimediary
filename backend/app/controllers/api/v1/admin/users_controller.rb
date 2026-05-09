@@ -5,7 +5,19 @@ module Api
     module Admin
       class UsersController < BaseController
         before_action :set_user, only: [ :show, :update, :destroy ]
+
         before_action :authorize_super_admin!, only: [ :destroy ]
+
+        def create
+          authorize! :create, User
+
+          @user = User.new(create_user_params)
+          @user.save!
+          render_success({ user: UserSerializer.render_as_hash(@user) }, status: :created)
+        rescue ActiveRecord::RecordInvalid => e
+          render json: { error: "Unprocessable Entity", errors: e.record.errors.full_messages },
+                 status: :unprocessable_entity
+        end
 
         def index
           authorize! :read, User
@@ -42,6 +54,10 @@ module Api
 
         def set_user
           @user = User.find(params[:id])
+        end
+
+        def create_user_params
+          params.require(:user).permit(:email, :password, :password_confirmation, :role)
         end
 
         def user_params

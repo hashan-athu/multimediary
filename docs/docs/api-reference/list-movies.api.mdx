@@ -1,0 +1,71 @@
+---
+id: list-movies
+title: "List movies"
+description: "Returns a paginated list of movies. Supports Ransack search via"
+sidebar_label: "List movies"
+hide_title: true
+hide_table_of_contents: true
+api: eJzNV1lz2zYQ/is7yEOPMDocu0050weP7abJxKlrO82DrZFW5IpCDAIUACpWPfrvnQUlhbpdTzqpXkSCu4tv790H4TFzIr4R52YsyYlOJFJyiZWFl0aLWFySL612gFBgJjV6SkFJ58EMIA88Dbgqi8JY7+AStcPkDhyhTYYwlnire6ObgSSVdgtLqUzQU+fXMaqSeoA6BSfzQhE4Y73UGbNAj1968Bx6qbSUMJBe41aLSBRoMSdPliE/CMkARyXZiYiExpxELArMSETCJUPKUcQPwk8KPpfaU0ZWsH4DLJUXcXs6jbYIIdv9F4IOjrZKYlU2SXHeSp2JSNA9sgFEXHFMV+1/YlSZa/AmmAj6kwacl85Dn0Bq8EOC4Dmwlemxr6iL3lvZLz05QKXMZ/ZXQ2yDuDDybpy6zDlO0CWiwljFyswE1clWM4xu+KGbGO07O65Z0/495gTMhVI7CGGzVY/RzYTQdmm08Ya529auOLvHxAOzQo4+Ge6Qr1BnJWaP0GO7DLeLrx4OAVFl1bWcnKcZR8T3qDxZjV6OaREmz2HhVQhJ434Q004kLLnCaEeO7z5otfhvWfbFIstDdodcF5FgjUl7pseiUJzH0ujmJ8dMD+sKmf4nSpixsKYg62V1ZVUxanRoLbJ9pKfc7eeX6WaXVubdZc43OqFKx2kUbLsxpRf0B612axqJucd3yz7TmZJuyG4uleIUFLG3JU3ZbqX2drKb/8PV8SZeW2ovl/TaALR9+Go1PM6l5tzfJHIgFXWd/LsuVJd5f1Xm0U+NozWxlGF/skXwmKyTVSys6rlMW9f7NMSosd85OCk9O6YwzpPtllbtlzSNuHkpqTd6Z502T/vdjfGzyW3oKTNLfvvqEfm7UWry2ZiUy4Xw0ofTk/nNnPXS3f2XCE7/On3ROvyZiZ03litbRbwT9unpHFt3YGyO/okQ6wH3WLhLpjqV7u63CsHq8YnJC0xCSGWk7bcpOcfJvN4sJdLeWK3p8prBB+1GJSrpv1HxbLdetYolI/8Z4EzEtH4YJpF33DD4NCf/iI6QlNaS9tW4tTdIvPGoAq3bQ3y4oA4leDf1y8MDLj7zqW93Zziqqzxrl9Loc1Z3Gn6ROGy111vre+MBSz8k7cMcnM7NNDSpiEVGwTrohyIWTSxkc9xuYppL3Zy1zUg4suP59BuKpBh6X8TNpjIJqqFxPn7ZarXFau1+x58hpTEpU+TcyHkacJSUlr3I4vqEluxxydffdOqfr7i5VwavEy2MxBDmQw2/V0Qimj3MUjQWbz9eB42lHpjAPg+bUnGfSyXaCRxfvFlDf3l2dc0fYGBsNfLWOYrhxElWLxyAkn3LxzlqzIh1BTdxnvLGrb7Vx0pBsCmQTgsjtXdgaVRKS4Dw9uM1VKDBmzvSYPo8eVIKA2ty6F38cXUNy65RJpNhPbko+0omG8RqU/e6NDoAefYMLtHzfJVL3nz47AW8Y2kLGTEcBSnkvIOCLOShs4fHNxdMz+r0AqAfe1+ujuFlq7WT81af3SdEKa9cbNCAAuxs1+sdHvwC18bAOeoJXM7kzHawRacX7Uar0Zp37RxDaZvNuVwEYBG1K+VvMUv+v5bLWTR7uvfNQqEMlXs2iVRZeSOwkGwCTrDgfhHNR9pOJDj9mOjhoY+OPlg1nfJxtQJwiqXScZlPRTxA5SgSdzT5srJW200swgKyjfTLYrqbfKvJv94+ucViFdDZ3vsYner75xOV2rQm7oS3so8+8dq11XHPnbX99DGG2bBwPhHo0xbGPdq4ZUAdfrGymmNuOtNIDAlTsiHyK57jhHewGtfaKslSFg3x9Rn3i38AfTxlXQ==
+sidebar_class_name: "get api-method"
+info_path: docs/api-reference/multimediary-api
+custom_edit_url: null
+---
+
+import MethodEndpoint from "@theme/ApiExplorer/MethodEndpoint";
+import ParamsDetails from "@theme/ParamsDetails";
+import RequestSchema from "@theme/RequestSchema";
+import StatusCodes from "@theme/StatusCodes";
+import OperationTabs from "@theme/OperationTabs";
+import TabItem from "@theme/TabItem";
+import Heading from "@theme/Heading";
+import Translate from "@docusaurus/Translate";
+
+<Heading
+  as={"h1"}
+  className={"openapi__heading"}
+  children={"List movies"}
+>
+</Heading>
+
+<MethodEndpoint
+  method={"get"}
+  path={"/api/v1/admin/movies"}
+  context={"endpoint"}
+>
+  
+</MethodEndpoint>
+
+
+
+Returns a paginated list of movies. Supports Ransack search via
+`q[field_predicate]=value` and simple sorting via `sort` + `direction`.
+
+
+<Heading
+  id={"request"}
+  as={"h2"}
+  className={"openapi-tabs__heading"}
+>
+  <Translate id="theme.openapi.request.title">Request</Translate>
+</Heading>
+
+<ParamsDetails
+  {...require("./list-movies.ParamsDetails.json")}
+>
+  
+</ParamsDetails>
+
+<RequestSchema
+  {...require("./list-movies.RequestSchema.json")}
+>
+  
+</RequestSchema>
+
+<StatusCodes
+  {...require("./list-movies.StatusCodes.json")}
+>
+  
+</StatusCodes>
+
+
+      

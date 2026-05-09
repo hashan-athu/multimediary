@@ -9,7 +9,8 @@ module Api
         load_and_authorize_resource class: Disk
 
         def index
-          @disks = Disk.includes(:disk_format).order(name: :asc)
+          @disks = Disk.includes(:disk_format)
+          @disks = apply_sort(@disks, default_column: :name, default_direction: :asc)
           @disks = paginate(@disks)
 
           render_success({

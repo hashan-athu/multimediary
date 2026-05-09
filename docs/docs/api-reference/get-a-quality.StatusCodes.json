@@ -1,0 +1,1 @@
+{"responses":{"200":{"description":"Quality","content":{"application/json":{"schema":{"type":"object","properties":{"quality":{"type":"object","properties":{"id":{"type":"integer"},"name":{"type":"string","example":"1080p"}},"title":"Quality"}}}}}}}}

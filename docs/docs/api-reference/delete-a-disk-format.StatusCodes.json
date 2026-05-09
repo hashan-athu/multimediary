@@ -1,0 +1,1 @@
+{"responses":{"200":{"description":"DiskFormat deleted"},"403":{"description":"Forbidden — admin role required"},"422":{"description":"Cannot delete — has associated disks"}}}

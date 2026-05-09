@@ -1,0 +1,1 @@
+{"responses":{"200":{"description":"Genre deleted"},"403":{"description":"Forbidden — admin role required"},"422":{"description":"Cannot delete — genre has associated movies"}}}

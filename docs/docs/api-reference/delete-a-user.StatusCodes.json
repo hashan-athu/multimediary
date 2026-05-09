@@ -1,0 +1,1 @@
+{"responses":{"200":{"description":"User deleted"},"403":{"description":"Forbidden — super_admin role required"}}}

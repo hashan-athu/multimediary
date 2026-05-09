@@ -1,0 +1,1 @@
+{"title":"Body","body":{"required":true,"content":{"application/json":{"schema":{"type":"object","required":["disk"],"properties":{"disk":{"type":"object","required":["name","storage_type","disk_format_id"],"properties":{"name":{"type":"string","example":"HDD-03"},"storage_type":{"type":"string","example":"HDD"},"disk_format_id":{"type":"integer"}}}}}}}}}

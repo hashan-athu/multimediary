@@ -1,0 +1,1 @@
+{"responses":{"200":{"description":"Reviewer deleted"},"403":{"description":"Forbidden — admin role required"}}}

@@ -1,0 +1,1 @@
+{"title":"Body","body":{"required":true,"content":{"application/json":{"schema":{"type":"object","required":["user"],"properties":{"user":{"type":"object","properties":{"role":{"type":"string","enum":["super_admin","admin","editor","analyst"]}}}}}}}}}

@@ -1,0 +1,1 @@
+{"title":"Body","body":{"required":true,"content":{"application/json":{"schema":{"type":"object","properties":{"director":{"type":"object","properties":{"first_name":{"type":"string"},"last_name":{"type":"string"},"date_of_birth":{"type":"string","format":"date"},"image_url":{"type":"string"}}}}}}}}}

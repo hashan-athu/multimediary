@@ -1,0 +1,1 @@
+{"responses":{"200":{"description":"Genre","content":{"application/json":{"schema":{"type":"object","properties":{"genre":{"type":"object","properties":{"id":{"type":"integer"},"name":{"type":"string","example":"Action"},"description":{"type":"string","nullable":true}},"title":"Genre"}}}}}}}}

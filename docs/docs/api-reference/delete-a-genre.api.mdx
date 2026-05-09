@@ -1,0 +1,69 @@
+---
+id: delete-a-genre
+title: "Delete a genre"
+description: "Returns 422 if the genre has associated movies."
+sidebar_label: "Delete a genre"
+hide_title: true
+hide_table_of_contents: true
+api: eJydVM1u20YQfpXB5NIWrETL7qG8GY1SJHBQQ1aRgy1AI+5IXGS5y+wOhQgCgT5En7BPUsySSe249aEnLmfn5/t25pszCh0SVvf4K/vICTcFGk51tJ3Y4LHCFUsffYKrxQLsHqRhOKgrNJSAUgq1JWEDbThaTjMsMHLqgk+csDrjoiz18zRnrgWGHQsbHAq8Ki+fe70JcWeNYQ9//fEnkGmthxgcQ+RPvY1T5GLxPPIX8j7IVCBHvwAZh6HAjiK1LBz1Lc5oNUtH0mCBnlrGCq3J1KbKlcSeC0x1wy0pADl12csLHzjiMGwKbFmaYLDCEQgWY8oK59TZ+fFinjnNM7Y0P1szYIGJ4/ELjD46rLAR6ar53IWaXBOSVJdleYHf9ulGr8HwkV3oWvaCCiFx3Ucrp5xuxxQ5XveK4X7z+PpOeYwNe+z0lZZCwImu/o9OWEyHNyG2JFjhuw/r/JzW70MOt+LU/33vxLZsLMUTXN++fYZ+tbxb6wXsQ8wz9iSia07JKr1sAGd3Uc0teTqwcoV0SsLt7ME/+GvnpmFhb7pgvaQvEwME7z6sYQQNEj6yh7ATsp4N7GNoYXv7290anvbHhYP129mDv+13ztb/ktYHoF4a9mJrUkYZyKtXsCJhcLa1Yv1BbT/CjWb7mqOCn3IWTpKg4wit9b1wPr69VX+ls82Aftj+U7qCy7J8MfLBLz/XzMb6Q37QjALipObt1eJnWIcA78mfYDXlUZJYoM7f2JaLWTkrVWZdSNKS155Oeng9iotGaX3b0DPWwYtO4f/ZINPUCX+WeefIeoWQxXCeJHSP1FmFqkLIbcICRyFhgZU1ushULOp6Pu8o8e/RDYOaP/UcVRCbAo8ULe10RO/PaGzSs8FqTy7xC4y+W0174Hv4L7STkfxJUZLr9Q8L/MincZkMm+HRhni9vFmulzgMfwNEPuoZ
+sidebar_class_name: "delete api-method"
+info_path: docs/api-reference/multimediary-api
+custom_edit_url: null
+---
+
+import MethodEndpoint from "@theme/ApiExplorer/MethodEndpoint";
+import ParamsDetails from "@theme/ParamsDetails";
+import RequestSchema from "@theme/RequestSchema";
+import StatusCodes from "@theme/StatusCodes";
+import OperationTabs from "@theme/OperationTabs";
+import TabItem from "@theme/TabItem";
+import Heading from "@theme/Heading";
+import Translate from "@docusaurus/Translate";
+
+<Heading
+  as={"h1"}
+  className={"openapi__heading"}
+  children={"Delete a genre"}
+>
+</Heading>
+
+<MethodEndpoint
+  method={"delete"}
+  path={"/api/v1/admin/genres/{id}"}
+  context={"endpoint"}
+>
+  
+</MethodEndpoint>
+
+
+
+Returns 422 if the genre has associated movies.
+
+<Heading
+  id={"request"}
+  as={"h2"}
+  className={"openapi-tabs__heading"}
+>
+  <Translate id="theme.openapi.request.title">Request</Translate>
+</Heading>
+
+<ParamsDetails
+  {...require("./delete-a-genre.ParamsDetails.json")}
+>
+  
+</ParamsDetails>
+
+<RequestSchema
+  {...require("./delete-a-genre.RequestSchema.json")}
+>
+  
+</RequestSchema>
+
+<StatusCodes
+  {...require("./delete-a-genre.StatusCodes.json")}
+>
+  
+</StatusCodes>
+
+
+      

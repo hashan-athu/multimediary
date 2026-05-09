@@ -1,0 +1,72 @@
+---
+id: admin-login
+title: "Admin login"
+description: "Authenticates an admin user and returns a JWT in the `Authorization`"
+sidebar_label: "Admin login"
+hide_title: true
+hide_table_of_contents: true
+api: eJztVsFuG0cM/RWCuRVrSbbTQxdFUCdVAAcOatgKcpCMarRLSXRmZzYzXNmKIKAf0S/slwScXVm2ZTRAz9VlZ2dJziP5+EYbFLOImI/xrJEl3mQYqWgCyxrz8U2GJcUicC3sHebJhpxwYYQiGAemrNhBEymAcSUEkia4CAY+fB4BO5AlwVS9fOBvRqNMJy5QrL2LBEsyJYUeDO8lmEJSiCg+EMiSI4j/Qg7mPugB4B0YayE2s0hfG3ICQZ9RYm/iJu6a3cLSUaQY2TsgN/ehoIqc5MDzBKSFaQOZcg1L0yZQCK8IOrdMwbUpTF8PTuG9DzMuS3LTHrzT06e/Dy+GoyH0Tc391XE/5d+3fuEbmcKcQxQQD4UlE4ClN3GYYYfzrS/XmG/SKwcqMZfQUIaFd0JO9JOpa6vFZe/6t1FLvsFYLKkyupJ1TZijn91SIV3cNtAYNTftXh18TUGYonqk3R94UmXYYoa1ifHOh/IwSmuxDxMlsFtghnMfKiOYP8Sge1PVVm1SYX7r3nuFr3D76IgXYu1dd1bHJ6e47X4KuSVNQnQyGOjjKTkv/IIdxKYoKMZ5Y+Gfv/7e8fAJBeEZATHDdpFiPzF9sQEd5u3z6XhLJlCAX2/v5M/E3TeYoL8eHB+iPXcrY7mEIlCpI2VsxGR7emj76YfERT2nIln6Uivoo6SOyhJzPOAqKykjhVXKeLzBJljMcSlS5/2+9YWxSx8lPx0MjvF5khf6GUpakfW1jhduH4nGtdaq7dEsVSOpyr50eoYensww74ww6xbvd4T68HmUUtIhuNqPz3BHkj21O3K+QLjHfHtGqgzZzX3CxZJI97GxwhWVbMIazi7PD/K+Gl6P9EPSI1WTJx71ch1ZC5M2wPIs6HZlnFkkEYK4jkJVkqozazvhJFfWnp1E6CayU862Gp0A+pkYdlTCPPgKppd/XI8O9YfdtDdxl83McvFCWOfB7LWbvUtAXr2CKyMElisWdgvdO4J2jnYxcvj5QWihpgAVu0YoLc8v1V7TmSZAP033R+dwOhj8q+fEDe8LopLdIhU0oYC9/p78AiPv4aNxa+g4EKetoipz27Yc9wa9QdIWH6UyaWCdSdw6SyXe8f1JNzd70f3/TvtPd1o3z0L30q+tYac9SDqy6XRnjKZm7ZVqSIqJGbbduMlQBUZtNpuZifQp2O1Wt782FLp/HisT2Mx0OMc3251CJ7n6QmvM8V3bwaORIlFz26SL5/kVqvL0oIw6PKo23VVc+VJ9grnTS9HcYY6YoU8sSSKW9jZojVs0ZqG2bUz9fQcYKT2Z
+sidebar_class_name: "post api-method"
+info_path: docs/api-reference/multimediary-api
+custom_edit_url: null
+---
+
+import MethodEndpoint from "@theme/ApiExplorer/MethodEndpoint";
+import ParamsDetails from "@theme/ParamsDetails";
+import RequestSchema from "@theme/RequestSchema";
+import StatusCodes from "@theme/StatusCodes";
+import OperationTabs from "@theme/OperationTabs";
+import TabItem from "@theme/TabItem";
+import Heading from "@theme/Heading";
+import Translate from "@docusaurus/Translate";
+
+<Heading
+  as={"h1"}
+  className={"openapi__heading"}
+  children={"Admin login"}
+>
+</Heading>
+
+<MethodEndpoint
+  method={"post"}
+  path={"/api/v1/admin/login"}
+  context={"endpoint"}
+>
+  
+</MethodEndpoint>
+
+
+
+Authenticates an admin user and returns a JWT in the `Authorization`
+response header. Extract and store this token for use on all subsequent requests.
+
+Single-session enforcement: if the user already has an active session,
+returns `403 Forbidden`. Call `DELETE /api/v1/admin/logout` first to clear it.
+
+
+<Heading
+  id={"request"}
+  as={"h2"}
+  className={"openapi-tabs__heading"}
+>
+  <Translate id="theme.openapi.request.title">Request</Translate>
+</Heading>
+
+<ParamsDetails>
+  
+</ParamsDetails>
+
+<RequestSchema
+  {...require("./admin-login.RequestSchema.json")}
+>
+  
+</RequestSchema>
+
+<StatusCodes
+  {...require("./admin-login.StatusCodes.json")}
+>
+  
+</StatusCodes>
+
+
+      

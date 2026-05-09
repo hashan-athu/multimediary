@@ -8,8 +8,9 @@ module Api
         load_and_authorize_resource class: Director
 
         def index
-          @directors = Director.order(last_name: :asc, first_name: :asc)
+          @directors = Director.all
           @directors = @directors.ransack(params[:q]).result if params[:q].present?
+          @directors = apply_sort(@directors, default_column: :last_name, default_direction: :asc)
           @directors = paginate(@directors)
 
           render_success({

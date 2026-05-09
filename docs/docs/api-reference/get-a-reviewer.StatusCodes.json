@@ -1,0 +1,1 @@
+{"responses":{"200":{"description":"Reviewer","content":{"application/json":{"schema":{"type":"object","properties":{"reviewer":{"type":"object","properties":{"id":{"type":"integer"},"name":{"type":"string","example":"IMDb"},"website_url":{"type":"string","nullable":true,"example":"https://www.imdb.com"}},"title":"Reviewer"}}}}}}}}

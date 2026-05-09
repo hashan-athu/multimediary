@@ -1,0 +1,1 @@
+{"responses":{"200":{"description":"Disk deleted"},"403":{"description":"Forbidden — admin role required"},"422":{"description":"Cannot delete — disk has associated movies"}}}

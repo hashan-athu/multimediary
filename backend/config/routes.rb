@@ -36,7 +36,8 @@ Rails.application.routes.draw do
         resources :reviewers
         resources :disks
         resources :disk_formats
-        resources :users, only: [ :index, :show, :update, :destroy ]
+        resources :users, only: [ :index, :show, :create, :update, :destroy ]
+        resource :dashboard, only: [ :show ]
       end
 
       # ── Public namespace (read-only, future frontend) ─────────────────
@@ -49,5 +50,5 @@ Rails.application.routes.draw do
     end
   end
 
-  get "up" => "rails/health#show", as: :rails_health_check
+  get "up" => "health#show", as: :rails_health_check
 end

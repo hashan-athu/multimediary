@@ -1,0 +1,1 @@
+{"parameters":[{"in":"query","name":"page","schema":{"type":"integer","default":1}},{"in":"query","name":"per_page","schema":{"type":"integer","default":25}}]}

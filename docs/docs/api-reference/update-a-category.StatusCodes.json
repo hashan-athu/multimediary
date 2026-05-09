@@ -1,0 +1,1 @@
+{"responses":{"200":{"description":"Category updated","content":{"application/json":{"schema":{"type":"object","properties":{"category":{"type":"object","properties":{"id":{"type":"integer"},"name":{"type":"string","example":"Hollywood"}},"title":"Category"}}}}}}}}

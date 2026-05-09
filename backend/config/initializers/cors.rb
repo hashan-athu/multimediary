@@ -1,29 +1,13 @@
-# Be sure to restart your server when you modify this file.
+# frozen_string_literal: true
 
-# Avoid CORS issues when API is called from the frontend app.
-# Handle Cross-Origin Resource Sharing (CORS) in order to accept cross-origin Ajax requests.
-
-# Read more: https://github.com/cyu/rack-cors
-
-# Rails.application.config.middleware.insert_before 0, Rack::Cors do
-#   allow do
-#     origins "example.com"
-#
-#     resource "*",
-#       headers: :any,
-#       methods: [:get, :post, :put, :patch, :delete, :options, :head]
-#   end
-# end
-#
 Rails.application.config.middleware.insert_before 0, Rack::Cors do
   allow do
-    # For development, we allow all origins.
-    # In production, you would change '*' to your actual domain name.
-    origins "*"
+    origins ENV.fetch("CORS_ALLOWED_ORIGINS", "http://localhost:3000").split(",")
 
-    resource "*",
-      headers: :any,
-      expose: [ "Authorization" ], # Important so Next.js can read the JWT token from headers
-      methods: [ :get, :post, :put, :patch, :delete, :options, :head ]
+    resource "/api/*",
+             headers: :any,
+             methods: [ :get, :post, :patch, :put, :delete, :options, :head ],
+             expose: [ "Authorization" ],
+             max_age: 600
   end
 end

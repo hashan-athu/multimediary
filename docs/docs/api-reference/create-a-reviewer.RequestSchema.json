@@ -1,0 +1,1 @@
+{"title":"Body","body":{"required":true,"content":{"application/json":{"schema":{"type":"object","required":["reviewer"],"properties":{"reviewer":{"type":"object","required":["name"],"properties":{"name":{"type":"string","example":"IMDb"},"website_url":{"type":"string","example":"https://www.imdb.com"}}}}}}}}}

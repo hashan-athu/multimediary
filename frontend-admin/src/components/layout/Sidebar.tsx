@@ -20,6 +20,8 @@ import { useAuthStore } from "@/store/authStore";
 import { useUIStore } from "@/store/uiStore";
 import { Button } from "@/components/ui/button";
 import { Avatar, AvatarFallback } from "@/components/ui/avatar";
+import { apiClient } from "@/lib/api";
+import { useRouter } from "next/navigation";
 
 const NAV_ITEMS = [
   { label: "Dashboard", href: "/admin/dashboard", icon: LayoutDashboard },
@@ -35,8 +37,21 @@ const ADMIN_ITEMS = [
 
 export default function Sidebar() {
   const pathname = usePathname();
-  const { user, logout } = useAuthStore();
+  const router = useRouter();
+  const { user, clearAuth } = useAuthStore();
   const { sidebarCollapsed, toggleSidebar, setSidebarCollapsed } = useUIStore();
+
+  const handleLogout = async () => {
+    try {
+      await apiClient.auth.logout();
+    } catch {
+      // Ignore server errors — always clear local state
+    } finally {
+      clearAuth();
+      document.cookie = "mm_token=; path=/; max-age=0";
+      router.push("/login");
+    }
+  };
 
   const roleColorMap = {
     super_admin: "bg-[#9A62FA]",
@@ -165,7 +180,7 @@ export default function Sidebar() {
           variant="ghost" 
           size="icon" 
           className="text-[#8892B0] hover:text-white hover:bg-white/10 shrink-0"
-          onClick={logout}
+          onClick={handleLogout}
         >
           <Power size={18} />
         </Button>

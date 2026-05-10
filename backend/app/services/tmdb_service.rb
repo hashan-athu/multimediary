@@ -1,7 +1,7 @@
 # frozen_string_literal: true
 
 class TmdbService
-  BASE_URL = "https://api.themoviedb.org/3"
+  BASE_URL = "https://api.themoviedb.org/3/"
   IMAGE_BASE_URL = "https://image.tmdb.org/t/p/w500"
 
   class TmdbError < StandardError; end
@@ -17,13 +17,13 @@ class TmdbService
 
   # Search movies by title. Returns array of result hashes.
   def search(query)
-    response = get("/search/movie", query: query)
+    response = get("search/movie", query: query)
     response["results"] || []
   end
 
   # Fetch full movie detail by TMDb ID.
   def movie_detail(tmdb_id)
-    data = get("/movie/#{tmdb_id}", append_to_response: "credits")
+    data = get("movie/#{tmdb_id}", append_to_response: "credits")
 
     {
       name: data["title"],

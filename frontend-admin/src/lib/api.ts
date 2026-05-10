@@ -1,116 +1,243 @@
-import axios, { AxiosInstance } from "axios";
-import { 
-  DashboardStats, 
-  MovieList, 
-  MovieDetail, 
-  Disk, 
-  User, 
-  Genre, 
-  Category, 
-  Quality, 
-  DiskFormat, 
-  Reviewer,
-  Director,
+import axios from "axios";
+import { useAuthStore } from "@/store/authStore";
+import {
   Actor,
+  Category,
+  DiskFormat,
+  Director,
+  Disk,
+  Genre,
+  MovieDetail,
+  MovieList,
+  PaginationMeta,
+  Quality,
+  Rating,
+  Reviewer,
   TMDbSearchResult,
-  PaginationMeta
+  User,
 } from "@/types";
 
 const BASE_URL = process.env.NEXT_PUBLIC_API_URL || "http://localhost:3001";
 
-const api: AxiosInstance = axios.create({
+export const api = axios.create({
   baseURL: `${BASE_URL}/api/v1`,
-  headers: {
-    "Content-Type": "application/json",
-  },
+  headers: { "Content-Type": "application/json" },
 });
 
-// Interceptor to add JWT token to requests
-api.interceptors.request.use((config) => {
-  if (typeof window !== "undefined") {
-    const token = localStorage.getItem("auth_token");
-    if (token) {
-      config.headers.Authorization = `Bearer ${token}`;
-    }
+export function getCookieToken(): string | null {
+  if (typeof document === "undefined") return null;
+  const match = document.cookie.match(/(?:^|;\s*)mm_token=([^;]+)/);
+  return match ? decodeURIComponent(match[1]) : null;
+}
+
+export function decodeJwt(token: string): Record<string, unknown> | null {
+  try {
+    const payload = token.split(".")[1];
+    return JSON.parse(atob(payload));
+  } catch {
+    return null;
   }
+}
+
+api.interceptors.request.use((config) => {
+  const token =
+    (typeof window !== "undefined" ? useAuthStore.getState().token : null) ||
+    getCookieToken();
+  if (token) config.headers.Authorization = `Bearer ${token}`;
   return config;
 });
 
-// Interceptor to handle common errors
 api.interceptors.response.use(
-  (response) => response,
+  (r) => r,
   (error) => {
-    if (error.response?.status === 401) {
-      if (typeof window !== "undefined") {
-        localStorage.removeItem("auth_token");
-        document.cookie = "auth_token=; path=/; expires=Thu, 01 Jan 1970 00:00:00 GMT";
-        window.location.href = "/login";
-      }
+    if (error.response?.status === 401 && typeof window !== "undefined") {
+      useAuthStore.getState().clearAuth();
+      document.cookie = "mm_token=; path=/; max-age=0";
+      window.location.href = "/login";
     }
     return Promise.reject(error);
   }
 );
 
+export function extractApiError(error: unknown): string {
+  if (axios.isAxiosError(error)) {
+    const data = error.response?.data;
+    if (data?.errors && Array.isArray(data.errors)) return data.errors.join(", ");
+    if (data?.error) return data.error;
+    if (data?.message) return data.message;
+    if (error.response?.status === 422) return "Validation failed — check your inputs";
+    if (error.response?.status === 403) return "You don't have permission for this action";
+    if (error.response?.status === 409) return "This record already exists";
+    if (error.response?.status === 404) return "Record not found";
+  }
+  return "Something went wrong — please try again";
+}
+
 export const apiClient = {
   auth: {
-    login: (credentials: any) => api.post("/admin/login", { user: credentials }),
+    login: (creds: { email: string; password: string }) =>
+      api.post("/admin/login", { user: creds }),
     logout: () => api.delete("/admin/logout"),
   },
+
   dashboard: {
-    getStats: () => api.get<DashboardStats>("/admin/dashboard").then(res => res.data),
+    getStats: () => api.get("/admin/dashboard").then((r) => r.data),
   },
+
   movies: {
-    list: (params: any) => api.get<{ movies: MovieList[], meta: PaginationMeta }>("/admin/movies", { params }).then(res => res.data),
-    get: (id: number) => api.get<MovieDetail>(`/admin/movies/${id}`).then(res => res.data),
-    create: (data: any) => api.post<MovieDetail>("/admin/movies", { movie: data }).then(res => res.data),
-    update: (id: number, data: any) => api.patch<MovieDetail>(`/admin/movies/${id}`, { movie: data }).then(res => res.data),
+    list: (params: Record<string, unknown> = {}) =>
+      api.get("/admin/movies", { params }).then((r) => r.data as { movies: MovieList[]; meta: PaginationMeta }),
+    get: (id: number) =>
+      api.get(`/admin/movies/${id}`).then((r) => r.data.movie as MovieDetail),
+    create: (data: Record<string, unknown>) =>
+      api.post("/admin/movies", { movie: data }).then((r) => r.data.movie as MovieDetail),
+    update: (id: number, data: Record<string, unknown>) =>
+      api.patch(`/admin/movies/${id}`, { movie: data }).then((r) => r.data.movie as MovieDetail),
     delete: (id: number) => api.delete(`/admin/movies/${id}`),
-    tmdbSearch: (query: string) => api.post<TMDbSearchResult[]>("/admin/movies/tmdb_search", { query }).then(res => res.data),
+    tmdbSearch: (query: string) =>
+      api.post("/admin/movies/tmdb_search", { query }).then((r) => r.data.results as TMDbSearchResult[]),
+    tmdbImport: (params: {
+      tmdb_id: number;
+      disk_id: number;
+      category_id: number;
+      quality_ids?: number[];
+      file_size?: string;
+      version?: string;
+    }) => api.post("/admin/movies/tmdb_import", params).then((r) => r.data.movie as MovieDetail),
   },
+
+  actors: {
+    list: (params: Record<string, unknown> = {}) =>
+      api.get("/admin/actors", { params }).then((r) => ({
+        actors: r.data.actors as Actor[],
+        meta: r.data.meta as PaginationMeta,
+      })),
+    get: (id: number) => api.get(`/admin/actors/${id}`).then((r) => r.data.actor as Actor),
+    create: (data: Record<string, unknown>) =>
+      api.post("/admin/actors", { actor: data }).then((r) => r.data.actor as Actor),
+    update: (id: number, data: Record<string, unknown>) =>
+      api.patch(`/admin/actors/${id}`, { actor: data }).then((r) => r.data.actor as Actor),
+    delete: (id: number) => api.delete(`/admin/actors/${id}`),
+  },
+
+  directors: {
+    list: (params: Record<string, unknown> = {}) =>
+      api.get("/admin/directors", { params }).then((r) => ({
+        directors: r.data.directors as Director[],
+        meta: r.data.meta as PaginationMeta,
+      })),
+    get: (id: number) =>
+      api.get(`/admin/directors/${id}`).then((r) => r.data.director as Director),
+    create: (data: Record<string, unknown>) =>
+      api.post("/admin/directors", { director: data }).then((r) => r.data.director as Director),
+    update: (id: number, data: Record<string, unknown>) =>
+      api.patch(`/admin/directors/${id}`, { director: data }).then((r) => r.data.director as Director),
+    delete: (id: number) => api.delete(`/admin/directors/${id}`),
+  },
+
   disks: {
-    list: () => api.get<Disk[]>("/admin/disks").then(res => res.data),
-    get: (id: number) => api.get<Disk>(`/admin/disks/${id}`).then(res => res.data),
-    create: (data: any) => api.post<Disk>("/admin/disks", { disk: data }).then(res => res.data),
-    update: (id: number, data: any) => api.patch<Disk>(`/admin/disks/${id}`, { disk: data }).then(res => res.data),
+    list: (params: Record<string, unknown> = {}) =>
+      api.get("/admin/disks", { params }).then((r) => ({
+        disks: r.data.disks as Disk[],
+        meta: r.data.meta as PaginationMeta,
+      })),
+    get: (id: number) => api.get(`/admin/disks/${id}`).then((r) => r.data.disk as Disk),
+    create: (data: Record<string, unknown>) =>
+      api.post("/admin/disks", { disk: data }).then((r) => r.data.disk as Disk),
+    update: (id: number, data: Record<string, unknown>) =>
+      api.patch(`/admin/disks/${id}`, { disk: data }).then((r) => r.data.disk as Disk),
     delete: (id: number) => api.delete(`/admin/disks/${id}`),
   },
-  people: {
-    actors: {
-      list: (params: any) => api.get<Actor[]>("/admin/actors", { params }).then(res => res.data),
-      get: (id: number) => api.get<Actor>(`/admin/actors/${id}`).then(res => res.data),
-      create: (data: any) => api.post<Actor>("/admin/actors", { actor: data }).then(res => res.data),
-      update: (id: number, data: any) => api.patch<Actor>(`/admin/actors/${id}`, { actor: data }).then(res => res.data),
-      delete: (id: number) => api.delete(`/admin/actors/${id}`),
-    },
-    directors: {
-      list: (params: any) => api.get<Director[]>("/admin/directors", { params }).then(res => res.data),
-      get: (id: number) => api.get<Director>(`/admin/directors/${id}`).then(res => res.data),
-      create: (data: any) => api.post<Director>("/admin/directors", { director: data }).then(res => res.data),
-      update: (id: number, data: any) => api.patch<Director>(`/admin/directors/${id}`, { director: data }).then(res => res.data),
-      delete: (id: number) => api.delete(`/admin/directors/${id}`),
-    },
+
+  genres: {
+    list: (params: Record<string, unknown> = {}) =>
+      api.get("/admin/genres", { params }).then((r) => ({
+        genres: r.data.genres as Genre[],
+        meta: r.data.meta as PaginationMeta,
+      })),
+    create: (data: Record<string, unknown>) =>
+      api.post("/admin/genres", { genre: data }).then((r) => r.data.genre as Genre),
+    update: (id: number, data: Record<string, unknown>) =>
+      api.patch(`/admin/genres/${id}`, { genre: data }).then((r) => r.data.genre as Genre),
+    delete: (id: number) => api.delete(`/admin/genres/${id}`),
   },
-  library: {
-    genres: {
-      list: () => api.get<Genre[]>("/admin/genres").then(res => res.data),
-      create: (data: any) => api.post<Genre>("/admin/genres", data).then(res => res.data),
-      update: (id: number, data: any) => api.patch<Genre>(`/admin/genres/${id}`, data).then(res => res.data),
-      delete: (id: number) => api.delete(`/admin/genres/${id}`),
-    },
-    categories: {
-      list: () => api.get<Category[]>("/admin/categories").then(res => res.data),
-      create: (data: any) => api.post<Category>("/admin/categories", data).then(res => res.data),
-      update: (id: number, data: any) => api.patch<Category>(`/admin/categories/${id}`, data).then(res => res.data),
-      delete: (id: number) => api.delete(`/admin/categories/${id}`),
-    },
-    // ... other library endpoints follow similar pattern
+
+  categories: {
+    list: (params: Record<string, unknown> = {}) =>
+      api.get("/admin/categories", { params }).then((r) => ({
+        categories: r.data.categories as Category[],
+        meta: r.data.meta as PaginationMeta,
+      })),
+    create: (data: Record<string, unknown>) =>
+      api.post("/admin/categories", { category: data }).then((r) => r.data.category as Category),
+    update: (id: number, data: Record<string, unknown>) =>
+      api.patch(`/admin/categories/${id}`, { category: data }).then((r) => r.data.category as Category),
+    delete: (id: number) => api.delete(`/admin/categories/${id}`),
   },
+
+  qualities: {
+    list: (params: Record<string, unknown> = {}) =>
+      api.get("/admin/qualities", { params }).then((r) => ({
+        qualities: r.data.qualities as Quality[],
+        meta: r.data.meta as PaginationMeta,
+      })),
+    create: (data: Record<string, unknown>) =>
+      api.post("/admin/qualities", { quality: data }).then((r) => r.data.quality as Quality),
+    update: (id: number, data: Record<string, unknown>) =>
+      api.patch(`/admin/qualities/${id}`, { quality: data }).then((r) => r.data.quality as Quality),
+    delete: (id: number) => api.delete(`/admin/qualities/${id}`),
+  },
+
+  diskFormats: {
+    list: (params: Record<string, unknown> = {}) =>
+      api.get("/admin/disk_formats", { params }).then((r) => ({
+        disk_formats: r.data.disk_formats as DiskFormat[],
+        meta: r.data.meta as PaginationMeta,
+      })),
+    create: (data: Record<string, unknown>) =>
+      api.post("/admin/disk_formats", { disk_format: data }).then((r) => r.data.disk_format as DiskFormat),
+    update: (id: number, data: Record<string, unknown>) =>
+      api.patch(`/admin/disk_formats/${id}`, { disk_format: data }).then((r) => r.data.disk_format as DiskFormat),
+    delete: (id: number) => api.delete(`/admin/disk_formats/${id}`),
+  },
+
+  reviewers: {
+    list: (params: Record<string, unknown> = {}) =>
+      api.get("/admin/reviewers", { params }).then((r) => ({
+        reviewers: r.data.reviewers as Reviewer[],
+        meta: r.data.meta as PaginationMeta,
+      })),
+    create: (data: Record<string, unknown>) =>
+      api.post("/admin/reviewers", { reviewer: data }).then((r) => r.data.reviewer as Reviewer),
+    update: (id: number, data: Record<string, unknown>) =>
+      api.patch(`/admin/reviewers/${id}`, { reviewer: data }).then((r) => r.data.reviewer as Reviewer),
+    delete: (id: number) => api.delete(`/admin/reviewers/${id}`),
+  },
+
+  ratings: {
+    list: (movieId: number) =>
+      api.get(`/admin/movies/${movieId}/ratings`).then((r) => r.data.ratings as Rating[]),
+    create: (movieId: number, data: Record<string, unknown>) =>
+      api.post(`/admin/movies/${movieId}/ratings`, { rating: data }).then((r) => r.data.rating as Rating),
+    update: (movieId: number, ratingId: number, data: Record<string, unknown>) =>
+      api.patch(`/admin/movies/${movieId}/ratings/${ratingId}`, { rating: data }).then((r) => r.data.rating as Rating),
+    delete: (movieId: number, ratingId: number) =>
+      api.delete(`/admin/movies/${movieId}/ratings/${ratingId}`),
+  },
+
   users: {
-    list: () => api.get<User[]>("/admin/users").then(res => res.data),
-    create: (data: any) => api.post<User>("/admin/users", { user: data }).then(res => res.data),
-    update: (id: number, data: any) => api.patch<User>(`/admin/users/${id}`, { user: data }).then(res => res.data),
+    list: (params: Record<string, unknown> = {}) =>
+      api.get("/admin/users", { params }).then((r) => ({
+        users: r.data.users as User[],
+        meta: r.data.meta as PaginationMeta,
+      })),
+    get: (id: number) => api.get(`/admin/users/${id}`).then((r) => r.data.user as User),
+    create: (data: Record<string, unknown>) =>
+      api.post("/admin/users", { user: data }).then((r) => r.data.user as User),
+    update: (id: number, data: Record<string, unknown>) =>
+      api.patch(`/admin/users/${id}`, { user: data }).then((r) => r.data.user as User),
     delete: (id: number) => api.delete(`/admin/users/${id}`),
-  }
+  },
 };
 
 export default api;

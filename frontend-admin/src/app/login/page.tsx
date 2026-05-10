@@ -35,31 +35,41 @@ export default function LoginPage() {
 
   const form = useForm<LoginFormValues>({
     resolver: zodResolver(loginSchema),
-    defaultValues: {
-      email: "",
-      password: "",
-    },
+    defaultValues: { email: "", password: "" },
   });
 
   async function onSubmit(values: LoginFormValues) {
     setIsLoading(true);
     try {
       const response = await apiClient.auth.login(values);
-      const token = response.headers.authorization?.split(" ")[1];
-      const userData = response.data;
 
-      if (token) {
-        setToken(token);
-        setUser(userData);
-        
-        // Also set cookie for middleware (simplified for this generation)
-        document.cookie = `auth_token=${token}; path=/; max-age=86400; samesite=lax`;
-        
-        toast.success("Welcome back!");
-        router.push("/admin/dashboard");
+      // Token is in the Authorization header (Bearer <token>) or in the body
+      const headerAuth = response.headers["authorization"] || response.headers["Authorization"];
+      const token = headerAuth
+        ? headerAuth.replace(/^Bearer\s+/i, "")
+        : response.data.token;
+
+      const userData = response.data.user;
+
+      if (!token) {
+        toast.error("Authentication failed — no token received");
+        return;
       }
-    } catch (error: any) {
-      toast.error(error.response?.data?.error || "Invalid credentials");
+
+      setToken(token);
+      if (userData) setUser(userData);
+
+      // Write cookie for middleware (readable in Edge runtime)
+      document.cookie = `mm_token=${encodeURIComponent(token)}; path=/; max-age=${60 * 60 * 24 * 7}; SameSite=Lax`;
+
+      toast.success("Welcome back!");
+      router.push("/admin/dashboard");
+    } catch (error: unknown) {
+      const msg =
+        (error as { response?: { data?: { error?: string; message?: string } } })?.response?.data?.error ||
+        (error as { response?: { data?: { message?: string } } })?.response?.data?.message ||
+        "Invalid credentials";
+      toast.error(msg);
     } finally {
       setIsLoading(false);
     }
@@ -69,9 +79,8 @@ export default function LoginPage() {
     <div className="min-h-screen flex flex-col md:flex-row bg-[#F4F5F8]">
       {/* Left Panel - Brand */}
       <div className="hidden md:flex flex-col justify-between w-1/2 bg-[#16213E] p-12 text-white relative overflow-hidden">
-        {/* Background Accent */}
-        <div className="absolute top-0 right-0 w-64 h-64 bg-[#4299EB] opacity-10 rounded-full -translate-y-1/2 translate-x-1/2 blur-3xl"></div>
-        <div className="absolute bottom-0 left-0 w-96 h-96 bg-[#9A62FA] opacity-10 rounded-full translate-y-1/2 -translate-x-1/2 blur-3xl"></div>
+        <div className="absolute top-0 right-0 w-64 h-64 bg-[#4299EB] opacity-10 rounded-full -translate-y-1/2 translate-x-1/2 blur-3xl" />
+        <div className="absolute bottom-0 left-0 w-96 h-96 bg-[#9A62FA] opacity-10 rounded-full translate-y-1/2 -translate-x-1/2 blur-3xl" />
 
         <div>
           <div className="flex items-center gap-3 mb-12">
@@ -85,34 +94,26 @@ export default function LoginPage() {
             Your personal media library, organized.
           </h1>
           <p className="text-[#8892B0] text-lg mb-12">
-            700+ movies · DVDs & HDDs · TMDb auto-import
+            700+ movies · DVDs &amp; HDDs · TMDb auto-import
           </p>
 
           <div className="space-y-6">
-            <div className="flex items-center gap-4">
-              <div className="w-10 h-10 rounded-xl bg-white/5 flex items-center justify-center text-[#4299EB]">
-                <Film size={20} />
+            {[
+              { icon: Film, color: "#4299EB", text: "Movie & TV series catalogue" },
+              { icon: HardDrive, color: "#46BB78", text: "Physical disk tracking (DVD, HDD, Blu-ray)" },
+              { icon: Download, color: "#9A62FA", text: "TMDb metadata auto-import" },
+            ].map(({ icon: Icon, color, text }) => (
+              <div key={text} className="flex items-center gap-4">
+                <div className="w-10 h-10 rounded-xl bg-white/5 flex items-center justify-center" style={{ color }}>
+                  <Icon size={20} />
+                </div>
+                <p className="font-medium">{text}</p>
               </div>
-              <p className="font-medium">Movie & TV series catalogue</p>
-            </div>
-            <div className="flex items-center gap-4">
-              <div className="w-10 h-10 rounded-xl bg-white/5 flex items-center justify-center text-[#46BB78]">
-                <HardDrive size={20} />
-              </div>
-              <p className="font-medium">Physical disk tracking (DVD, HDD, Blu-ray)</p>
-            </div>
-            <div className="flex items-center gap-4">
-              <div className="w-10 h-10 rounded-xl bg-white/5 flex items-center justify-center text-[#9A62FA]">
-                <Download size={20} />
-              </div>
-              <p className="font-medium">TMDb metadata auto-import</p>
-            </div>
+            ))}
           </div>
         </div>
 
-        <div className="text-[#8892B0] text-sm font-medium">
-          Multimediary Admin · v1.0
-        </div>
+        <div className="text-[#8892B0] text-sm font-medium">Multimediary Admin · v1.0</div>
       </div>
 
       {/* Right Panel - Login Form */}
@@ -136,12 +137,14 @@ export default function LoginPage() {
                   name="email"
                   render={({ field }) => (
                     <FormItem>
-                      <FormLabel className="text-[#4F5C72] font-bold text-[11px] uppercase tracking-wider">Email Address</FormLabel>
+                      <FormLabel className="text-[#4F5C72] font-bold text-[11px] uppercase tracking-wider">
+                        Email Address
+                      </FormLabel>
                       <FormControl>
-                        <Input 
-                          placeholder="admin@multimediary.com" 
+                        <Input
+                          placeholder="admin@multimediary.com"
                           className="bg-[#EDF1F7] border-none h-11 rounded-lg focus-visible:ring-2 focus-visible:ring-[#4299EB]"
-                          {...field} 
+                          {...field}
                         />
                       </FormControl>
                       <FormMessage />
@@ -154,14 +157,16 @@ export default function LoginPage() {
                   name="password"
                   render={({ field }) => (
                     <FormItem>
-                      <FormLabel className="text-[#4F5C72] font-bold text-[11px] uppercase tracking-wider">Password</FormLabel>
+                      <FormLabel className="text-[#4F5C72] font-bold text-[11px] uppercase tracking-wider">
+                        Password
+                      </FormLabel>
                       <div className="relative">
                         <FormControl>
-                          <Input 
-                            type={showPassword ? "text" : "password"} 
-                            placeholder="••••••••" 
+                          <Input
+                            type={showPassword ? "text" : "password"}
+                            placeholder="••••••••"
                             className="bg-[#EDF1F7] border-none h-11 rounded-lg focus-visible:ring-2 focus-visible:ring-[#4299EB] pr-10"
-                            {...field} 
+                            {...field}
                           />
                         </FormControl>
                         <button
@@ -184,16 +189,12 @@ export default function LoginPage() {
                   </p>
                 </div>
 
-                <Button 
-                  type="submit" 
+                <Button
+                  type="submit"
                   disabled={isLoading}
                   className="w-full h-11 bg-[#4299EB] hover:bg-[#3182CE] text-white font-bold rounded-lg shadow-sm transition-all active:scale-[0.98]"
                 >
-                  {isLoading ? (
-                    <Loader2 className="mr-2 h-4 w-4 animate-spin" />
-                  ) : (
-                    "Sign In"
-                  )}
+                  {isLoading ? <Loader2 className="mr-2 h-4 w-4 animate-spin" /> : "Sign In"}
                 </Button>
               </form>
             </Form>

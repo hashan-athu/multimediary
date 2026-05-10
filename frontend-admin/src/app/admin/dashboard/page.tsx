@@ -88,7 +88,7 @@ export default function DashboardPage() {
             <TrendingUp size={18} className="text-[#9AA5B8]" />
           </div>
           <div className="space-y-5">
-            {stats?.movies?.by_category?.map((cat, i) => (
+            {stats?.movies?.by_category?.map((cat: { name: string; count: number }, i: number) => (
               <div key={i} className="space-y-2">
                 <div className="flex justify-between text-xs font-bold">
                   <span className="text-[#4F5C72]">{cat.name}</span>
@@ -125,7 +125,7 @@ export default function DashboardPage() {
               </div>
             </div>
             <div className="grid grid-cols-2 gap-x-8 gap-y-2 mt-8">
-              {stats?.disks?.by_format?.map((format, i) => (
+              {stats?.disks?.by_format?.map((format: { name: string; count: number }, i: number) => (
                 <div key={i} className="flex flex-col items-center">
                   <div className="text-sm font-bold text-[#1C2238]">{format.count}</div>
                   <div className="text-[10px] font-bold text-[#9AA5B8] uppercase">{format.name}</div>
@@ -166,7 +166,7 @@ export default function DashboardPage() {
         </div>
 
         <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-4 xl:grid-cols-6 gap-6">
-          {recentMovies?.map((movie) => (
+          {recentMovies?.map((movie: { id: number; name: string; poster_url?: string; genres?: { id: number; name: string }[] }) => (
             <Link key={movie.id} href={`/admin/movies/${movie.id}`} className="group block">
               <div className="aspect-[2/3] rounded-xl overflow-hidden mb-3 bg-[#C8D0DC] shadow-sm group-hover:shadow-md transition-all relative">
                 <PosterImage src={movie.poster_url} alt={movie.name} className="w-full h-full" />
@@ -178,7 +178,7 @@ export default function DashboardPage() {
               </div>
               <h4 className="font-bold text-sm text-[#1C2238] truncate group-hover:text-[#4299EB] transition-colors">{movie.name}</h4>
               <div className="flex flex-wrap gap-1.5 mt-2">
-                {movie.genres?.slice(0, 2).map((genre) => (
+                {movie.genres?.slice(0, 2).map((genre: { id: number; name: string }) => (
                   <span key={genre.id} className="text-[9px] font-bold text-[#9AA5B8] uppercase">
                     {genre.name}
                   </span>

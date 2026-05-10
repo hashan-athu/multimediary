@@ -35,6 +35,8 @@ class TmdbService
       country: data.dig("production_countries", 0, "name"),
       poster_url: build_poster_url(data["poster_path"]),
       tmdb_id: data["id"],
+      vote_average: data["vote_average"],
+      vote_count: data["vote_count"],
       genres: extract_genres(data["genres"]),
       director: extract_director(data["credits"]),
       actors: extract_actors(data["credits"])

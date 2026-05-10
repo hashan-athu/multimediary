@@ -2,7 +2,7 @@
 
 import { useState } from "react";
 import { useQuery, useQueryClient } from "@tanstack/react-query";
-import { Plus, Search, LayoutGrid, List, ChevronDown, MoreVertical, Edit2, Eye, Trash2 } from "lucide-react";
+import { Plus, Search, LayoutGrid, List, MoreVertical, Edit2, Eye, Trash2 } from "lucide-react";
 import { apiClient, extractApiError } from "@/lib/api";
 import PageHeader from "@/components/shared/PageHeader";
 import { Button } from "@/components/ui/button";
@@ -22,18 +22,47 @@ import {
 import ConfirmDialog from "@/components/shared/ConfirmDialog";
 import { cn } from "@/lib/utils";
 import { toast } from "sonner";
-import { useRouter } from "next/navigation";
+
+const filterSelectCls =
+  "h-10 bg-[#EDF1F7] text-[#4F5C72] font-semibold text-xs rounded-lg pl-3 pr-8 border-none outline-none appearance-none cursor-pointer";
 
 export default function MoviesPage() {
   const [viewMode, setViewMode] = useState<"grid" | "list">("grid");
   const [search, setSearch] = useState("");
   const [page, setPage] = useState(1);
+  const [categoryFilter, setCategoryFilter] = useState("");
+  const [genreFilter, setGenreFilter] = useState("");
+  const [qualityFilter, setQualityFilter] = useState("");
+  const [yearFilter, setYearFilter] = useState("");
+  const [movieToDelete, setMovieToDelete] = useState<MovieList | null>(null);
   const queryClient = useQueryClient();
-  const router = useRouter();
 
   const { data, isLoading } = useQuery({
-    queryKey: ["movies", page, search],
-    queryFn: () => apiClient.movies.list({ page, "q[name_cont]": search || undefined }),
+    queryKey: ["movies", page, search, categoryFilter, genreFilter, qualityFilter, yearFilter],
+    queryFn: () =>
+      apiClient.movies.list({
+        page,
+        "q[name_cont]": search || undefined,
+        "q[category_id_eq]": categoryFilter || undefined,
+        "q[genres_id_eq]": genreFilter || undefined,
+        "q[qualities_id_eq]": qualityFilter || undefined,
+        "q[year_eq]": yearFilter || undefined,
+      }),
+  });
+
+  const { data: catData } = useQuery({
+    queryKey: ["categories"],
+    queryFn: () => apiClient.categories.list(),
+  });
+
+  const { data: genreData } = useQuery({
+    queryKey: ["genres"],
+    queryFn: () => apiClient.genres.list(),
+  });
+
+  const { data: qualityData } = useQuery({
+    queryKey: ["qualities"],
+    queryFn: () => apiClient.qualities.list(),
   });
 
   const handleDelete = async (id: number, name: string) => {
@@ -45,6 +74,17 @@ export default function MoviesPage() {
       toast.error(extractApiError(err));
     }
   };
+
+  const resetFilters = () => {
+    setCategoryFilter("");
+    setGenreFilter("");
+    setQualityFilter("");
+    setYearFilter("");
+    setSearch("");
+    setPage(1);
+  };
+
+  const hasActiveFilters = !!(categoryFilter || genreFilter || qualityFilter || yearFilter || search);
 
   const columns: ColumnDef<MovieList>[] = [
     {
@@ -101,20 +141,12 @@ export default function MoviesPage() {
                   <Edit2 size={14} className="text-[#46BB78]" /> Edit Movie
                 </Link>
               </DropdownMenuItem>
-              <ConfirmDialog
-                title={`Delete "${row.original.name}"?`}
-                description="This cannot be undone. The movie will be permanently removed from your library."
-                confirmLabel="Delete Movie"
-                variant="destructive"
-                onConfirm={() => handleDelete(row.original.id, row.original.name)}
+              <DropdownMenuItem
+                className="gap-2 cursor-pointer py-2 font-medium text-[#F25959]"
+                onClick={() => setMovieToDelete(row.original)}
               >
-                <DropdownMenuItem
-                  onSelect={(e) => e.preventDefault()}
-                  className="gap-2 cursor-pointer py-2 font-medium text-[#F25959]"
-                >
-                  <Trash2 size={14} /> Delete
-                </DropdownMenuItem>
-              </ConfirmDialog>
+                <Trash2 size={14} /> Delete
+              </DropdownMenuItem>
             </DropdownMenuContent>
           </DropdownMenu>
         </div>
@@ -139,7 +171,7 @@ export default function MoviesPage() {
       {/* Filter & View Bar */}
       <div className="bg-white p-4 rounded-xl border border-[#E0E8EF] shadow-sm flex flex-wrap items-center justify-between gap-4">
         <div className="flex flex-wrap items-center gap-3">
-          <div className="relative w-64">
+          <div className="relative w-56">
             <Search className="absolute left-3 top-1/2 -translate-y-1/2 text-[#9AA5B8]" size={16} />
             <Input
               placeholder="Search by name..."
@@ -148,15 +180,65 @@ export default function MoviesPage() {
               onChange={(e) => { setSearch(e.target.value); setPage(1); }}
             />
           </div>
-          {["Category", "Genre", "Quality", "Format", "Year"].map((filter) => (
-            <Button
-              key={filter}
-              variant="ghost"
-              className="h-10 bg-[#EDF1F7] text-[#4F5C72] font-semibold text-xs rounded-lg px-4 flex items-center gap-2"
+
+          <div className="relative">
+            <select
+              value={categoryFilter}
+              onChange={(e) => { setCategoryFilter(e.target.value); setPage(1); }}
+              className={filterSelectCls}
             >
-              {filter} <ChevronDown size={14} className="text-[#9AA5B8]" />
+              <option value="">All Categories</option>
+              {catData?.categories?.map((c) => (
+                <option key={c.id} value={String(c.id)}>{c.name}</option>
+              ))}
+            </select>
+          </div>
+
+          <div className="relative">
+            <select
+              value={genreFilter}
+              onChange={(e) => { setGenreFilter(e.target.value); setPage(1); }}
+              className={filterSelectCls}
+            >
+              <option value="">All Genres</option>
+              {genreData?.genres?.map((g) => (
+                <option key={g.id} value={String(g.id)}>{g.name}</option>
+              ))}
+            </select>
+          </div>
+
+          <div className="relative">
+            <select
+              value={qualityFilter}
+              onChange={(e) => { setQualityFilter(e.target.value); setPage(1); }}
+              className={filterSelectCls}
+            >
+              <option value="">All Qualities</option>
+              {qualityData?.qualities?.map((q) => (
+                <option key={q.id} value={String(q.id)}>{q.name}</option>
+              ))}
+            </select>
+          </div>
+
+          <div className="relative">
+            <Input
+              placeholder="Year"
+              value={yearFilter}
+              onChange={(e) => { setYearFilter(e.target.value); setPage(1); }}
+              className="w-20 h-10 bg-[#EDF1F7] border-none rounded-lg text-xs font-semibold text-center text-[#4F5C72]"
+              maxLength={4}
+            />
+          </div>
+
+          {hasActiveFilters && (
+            <Button
+              variant="ghost"
+              onClick={resetFilters}
+              className="h-10 text-xs font-semibold text-[#F25959] hover:bg-[#FFF0F0] px-3"
+            >
+              Clear filters
             </Button>
-          ))}
+          )}
         </div>
 
         <div className="flex items-center gap-1 bg-[#EDF1F7] p-1 rounded-lg">
@@ -213,17 +295,12 @@ export default function MoviesPage() {
                 </div>
               </Link>
               {/* Quick delete on hover */}
-              <ConfirmDialog
-                title={`Delete "${movie.name}"?`}
-                description="This cannot be undone."
-                confirmLabel="Delete"
-                variant="destructive"
-                onConfirm={() => handleDelete(movie.id, movie.name)}
+              <div
+                className="absolute top-2 right-2 w-7 h-7 rounded-full bg-[#F25959] text-white items-center justify-center hidden group-hover:flex shadow-sm z-10 cursor-pointer"
+                onClick={() => setMovieToDelete(movie)}
               >
-                <div className="absolute top-2 right-2 w-7 h-7 rounded-full bg-[#F25959] text-white items-center justify-center hidden group-hover:flex shadow-sm z-10 cursor-pointer">
-                  <Trash2 size={13} />
-                </div>
-              </ConfirmDialog>
+                <Trash2 size={13} />
+              </div>
             </div>
           ))}
         </div>
@@ -270,6 +347,16 @@ export default function MoviesPage() {
           </Button>
         </div>
       )}
+
+      <ConfirmDialog
+        title={movieToDelete ? `Delete "${movieToDelete.name}"?` : "Delete movie?"}
+        description="This cannot be undone. The movie will be permanently removed from your library."
+        confirmLabel="Delete Movie"
+        variant="destructive"
+        open={movieToDelete !== null}
+        onOpenChange={(open) => { if (!open) setMovieToDelete(null); }}
+        onConfirm={() => { if (movieToDelete) handleDelete(movieToDelete.id, movieToDelete.name); }}
+      />
     </div>
   );
 }

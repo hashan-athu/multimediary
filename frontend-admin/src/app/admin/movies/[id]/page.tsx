@@ -5,7 +5,7 @@ import { useQuery, useQueryClient } from "@tanstack/react-query";
 import { useState, useRef } from "react";
 import {
   ArrowLeft, Edit2, Trash2, Clock, Globe, MapPin, Star, ExternalLink,
-  Plus, X, Loader2, Save,
+  Plus, X, Loader2, Save, Camera, ImageIcon,
 } from "lucide-react";
 import { apiClient, extractApiError } from "@/lib/api";
 import { Button } from "@/components/ui/button";
@@ -19,6 +19,10 @@ import ConfirmDialog from "@/components/shared/ConfirmDialog";
 import { Input } from "@/components/ui/input";
 import { toast } from "sonner";
 import { Actor, Rating, Reviewer } from "@/types";
+import {
+  Dialog, DialogContent, DialogHeader, DialogTitle,
+} from "@/components/ui/dialog";
+import { ImageUploadField } from "@/components/shared/ImageUploadField";
 
 function useMovieId() {
   const { id } = useParams();
@@ -220,6 +224,10 @@ export default function MovieDetailPage() {
   const [showRatingForm, setShowRatingForm] = useState(false);
   const [editingRating, setEditingRating] = useState<Rating | null>(null);
 
+  // Poster upload state
+  const [posterUploadOpen, setPosterUploadOpen] = useState(false);
+  const [posterEditUrl, setPosterEditUrl] = useState("");
+
   const invalidateMovie = () => queryClient.invalidateQueries({ queryKey: ["movies", movieId] });
 
   // ── Inline field save ──
@@ -323,6 +331,12 @@ export default function MovieDetailPage() {
         </div>
 
         <div className="flex items-center gap-3">
+          <Link
+            href={`/admin/movies/${movieId}/edit`}
+            className="flex items-center gap-2 px-4 py-2 rounded-lg bg-[#4299EB] text-white text-sm font-semibold hover:bg-[#3182CE] transition-colors h-10"
+          >
+            <Edit2 size={16} /> Edit Movie
+          </Link>
           <ConfirmDialog
             title={`Delete "${movie.name}"?`}
             description="This cannot be undone. The movie and all its ratings will be permanently removed."
@@ -341,8 +355,24 @@ export default function MovieDetailPage() {
       <Card className="p-8 border-none shadow-sm bg-white overflow-hidden relative">
         <div className="absolute top-0 right-0 w-96 h-96 bg-[#4299EB] opacity-5 rounded-full -translate-y-1/2 translate-x-1/2 blur-3xl" />
         <div className="flex flex-col md:flex-row gap-8 relative z-10">
-          <div className="w-48 aspect-[2/3] shrink-0">
-            <PosterImage src={movie.poster_url} alt={movie.name} className="w-full h-full shadow-lg" />
+          <div
+            className="relative group w-48 aspect-[2/3] shrink-0 cursor-pointer"
+            onClick={() => { setPosterEditUrl(movie.poster_url ?? ""); setPosterUploadOpen(true); }}
+          >
+            {movie.poster_url ? (
+              <PosterImage src={movie.poster_url} alt={movie.name} className="w-full h-full shadow-lg" />
+            ) : (
+              <div className="w-full h-full rounded-xl bg-[#EDF1F7] border-2 border-dashed border-[#E0E8EF] flex flex-col items-center justify-center">
+                <ImageIcon className="h-8 w-8 text-[#9AA5B8] mb-2" />
+                <span className="text-xs text-[#9AA5B8] text-center px-3">Add Poster</span>
+              </div>
+            )}
+            <div className="absolute inset-0 rounded-xl bg-black/60 opacity-0 group-hover:opacity-100 transition-opacity flex flex-col items-center justify-center">
+              <Camera className="h-6 w-6 text-white mb-1" />
+              <span className="text-xs font-medium text-white">
+                {movie.poster_url ? "Change" : "Add Poster"}
+              </span>
+            </div>
           </div>
           <div className="flex-1 space-y-6">
             <div className="flex flex-wrap gap-2">
@@ -442,38 +472,6 @@ export default function MovieDetailPage() {
                 </div>
               )}
             </div>
-
-            {/* Story */}
-            {(movie.story || editingField === "story") && (
-              <div>
-                <div className="flex items-center justify-between mb-3">
-                  <h3 className="text-lg font-bold text-[#1C2238]">The Story</h3>
-                  {editingField !== "story" && (
-                    <Button variant="ghost" size="sm" className="text-[#4299EB] font-bold text-xs"
-                      onClick={() => startEditField("story", movie.story ?? "")}>
-                      <Edit2 size={13} className="mr-1" /> Edit
-                    </Button>
-                  )}
-                </div>
-                {editingField === "story" ? (
-                  <div className="space-y-3">
-                    <textarea
-                      className="w-full p-4 bg-[#EDF1F7] rounded-xl text-[#4F5C72] leading-relaxed font-medium min-h-[160px] outline-none focus:ring-2 focus:ring-[#4299EB] text-sm"
-                      value={editValue}
-                      onChange={(e) => setEditValue(e.target.value)}
-                    />
-                    <div className="flex gap-2">
-                      <Button onClick={() => saveField("story")} disabled={savingField}
-                        className="h-9 bg-[#4299EB] text-white font-bold text-sm px-5">Save</Button>
-                      <Button variant="ghost" onClick={() => setEditingField(null)}
-                        className="h-9 bg-[#EDF1F7] text-[#4F5C72] font-bold text-sm px-4">Cancel</Button>
-                    </div>
-                  </div>
-                ) : (
-                  <p className="text-[#4F5C72] leading-relaxed whitespace-pre-wrap">{movie.story}</p>
-                )}
-              </div>
-            )}
 
             {movie.tagline && (
               <div className="py-6 border-y border-[#E0E8EF] text-center italic text-[#9A62FA] font-serif text-xl">
@@ -601,6 +599,42 @@ export default function MovieDetailPage() {
           </TabsContent>
         </div>
       </Tabs>
+
+      {/* Poster upload dialog */}
+      <Dialog open={posterUploadOpen} onOpenChange={setPosterUploadOpen}>
+        <DialogContent className="max-w-sm rounded-2xl p-8 border-none shadow-2xl">
+          <DialogHeader className="mb-4">
+            <DialogTitle className="text-[#1C2238] font-bold text-lg">Update Poster</DialogTitle>
+          </DialogHeader>
+          <ImageUploadField
+            label="Poster Image"
+            value={posterEditUrl}
+            onChange={setPosterEditUrl}
+            aspectRatio="poster"
+          />
+          <div className="flex gap-2 pt-4">
+            <Button variant="ghost" className="bg-[#EDF1F7] text-[#4F5C72] font-bold flex-1"
+              onClick={() => setPosterUploadOpen(false)}>
+              Cancel
+            </Button>
+            <Button
+              className="bg-[#4299EB] hover:bg-[#3182CE] text-white font-bold flex-1"
+              onClick={async () => {
+                try {
+                  await apiClient.movies.update(movieId, { poster_url: posterEditUrl });
+                  queryClient.invalidateQueries({ queryKey: ["movies", movieId] });
+                  setPosterUploadOpen(false);
+                  toast.success("Poster updated");
+                } catch (err) {
+                  toast.error(extractApiError(err));
+                }
+              }}
+            >
+              Save Poster
+            </Button>
+          </div>
+        </DialogContent>
+      </Dialog>
     </div>
   );
 }

@@ -24,6 +24,7 @@ Rails.application.routes.draw do
           collection do
             post :tmdb_search
             post :tmdb_import
+            post :tmdb_preview
           end
           resources :ratings, only: [ :index, :create, :update, :destroy ]
         end
@@ -38,6 +39,7 @@ Rails.application.routes.draw do
         resources :disk_formats
         resources :users, only: [ :index, :show, :create, :update, :destroy ]
         resource :dashboard, only: [ :show ]
+        resource :upload, only: [ :create ]
       end
 
       # ── Public namespace (read-only, future frontend) ─────────────────

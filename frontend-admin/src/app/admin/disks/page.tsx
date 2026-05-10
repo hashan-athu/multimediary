@@ -126,6 +126,7 @@ export default function DisksPage() {
   const [search, setSearch] = useState("");
   const [dialogOpen, setDialogOpen] = useState(false);
   const [editing, setEditing] = useState<Disk | null>(null);
+  const [diskToDelete, setDiskToDelete] = useState<Disk | null>(null);
 
   const { data: diskData, isLoading } = useQuery({
     queryKey: ["disks"],
@@ -215,30 +216,18 @@ export default function DisksPage() {
             <DropdownMenuContent align="end" className="w-40 rounded-xl border-[#E0E8EF] shadow-xl">
               <DropdownMenuItem
                 className="gap-2 cursor-pointer py-2 font-medium"
-                onSelect={() => openEdit(row.original)}
+                onClick={() => openEdit(row.original)}
               >
                 <Edit2 size={14} className="text-[#46BB78]" /> Edit Disk
               </DropdownMenuItem>
               <DropdownMenuSeparator />
-              <ConfirmDialog
-                title={`Delete "${row.original.name}"?`}
-                description={
-                  (row.original.movie_count ?? 0) > 0
-                    ? `This disk has ${row.original.movie_count} movies. Remove all movies first before deleting.`
-                    : "This disk will be permanently removed. This cannot be undone."
-                }
-                confirmLabel="Delete Disk"
-                variant="destructive"
-                onConfirm={() => handleDelete(row.original)}
+              <DropdownMenuItem
+                disabled={(row.original.movie_count ?? 0) > 0}
+                className="gap-2 cursor-pointer py-2 font-medium text-[#F25959]"
+                onClick={() => setDiskToDelete(row.original)}
               >
-                <DropdownMenuItem
-                  onSelect={(e) => e.preventDefault()}
-                  disabled={(row.original.movie_count ?? 0) > 0}
-                  className="gap-2 cursor-pointer py-2 font-medium text-[#F25959]"
-                >
-                  <Trash2 size={14} /> Delete
-                </DropdownMenuItem>
-              </ConfirmDialog>
+                <Trash2 size={14} /> Delete
+              </DropdownMenuItem>
             </DropdownMenuContent>
           </DropdownMenu>
         </div>
@@ -297,6 +286,20 @@ export default function DisksPage() {
       </div>
 
       <DataTable columns={columns} data={filtered} isLoading={isLoading} />
+
+      <ConfirmDialog
+        title={diskToDelete ? `Delete "${diskToDelete.name}"?` : "Delete disk?"}
+        description={
+          diskToDelete && (diskToDelete.movie_count ?? 0) > 0
+            ? `This disk has ${diskToDelete.movie_count} movies. Remove all movies first before deleting.`
+            : "This disk will be permanently removed. This cannot be undone."
+        }
+        confirmLabel="Delete Disk"
+        variant="destructive"
+        open={diskToDelete !== null}
+        onOpenChange={(open) => { if (!open) setDiskToDelete(null); }}
+        onConfirm={() => { if (diskToDelete) handleDelete(diskToDelete); }}
+      />
 
       <Dialog open={dialogOpen} onOpenChange={setDialogOpen}>
         <DialogContent className="max-w-md rounded-2xl p-8 border-none shadow-2xl">

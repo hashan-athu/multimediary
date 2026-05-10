@@ -21,6 +21,6 @@ class Movie < ApplicationRecord
   end
 
   def self.ransackable_associations(_auth_object = nil)
-    %w[category director genres actors disk]
+    %w[category director genres actors disk qualities]
   end
 end

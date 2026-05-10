@@ -21,11 +21,12 @@ import {
   DialogFooter,
 } from "@/components/ui/dialog";
 import { Actor, Director } from "@/types";
+import { ImageUploadField } from "@/components/shared/ImageUploadField";
 
 type PersonItem = Actor | Director;
 
-function isActor(p: PersonItem): p is Actor {
-  return "gender" in p;
+function isActor(p: PersonItem | null | undefined): p is Actor {
+  return p != null && "gender" in p;
 }
 
 type PersonFormProps = {
@@ -41,7 +42,7 @@ function PersonForm({ isActor: actorMode, initial, onClose, onSaved }: PersonFor
   const [dob, setDob] = useState(initial?.date_of_birth ?? "");
   const [nationality, setNationality] = useState(initial?.nationality ?? "");
   const [imageUrl, setImageUrl] = useState(initial?.image_url ?? "");
-  const [gender, setGender] = useState(isActor(initial as PersonItem) ? (initial as Actor).gender ?? "" : "");
+  const [gender, setGender] = useState(isActor(initial) ? initial.gender ?? "" : "");
   const [saving, setSaving] = useState(false);
 
   const handleSubmit = async () => {
@@ -137,16 +138,12 @@ function PersonForm({ isActor: actorMode, initial, onClose, onSaved }: PersonFor
         </div>
       </div>
 
-      <div className="space-y-1.5">
-        <label className="text-[11px] font-bold text-[#4F5C72] uppercase tracking-wider">Photo URL</label>
-        <Input
-          value={imageUrl}
-          onChange={(e) => setImageUrl(e.target.value)}
-          className="h-10 bg-[#EDF1F7] border-none"
-          placeholder="https://..."
-          type="url"
-        />
-      </div>
+      <ImageUploadField
+        label="Profile Photo"
+        value={imageUrl}
+        onChange={setImageUrl}
+        aspectRatio="square"
+      />
 
       <DialogFooter className="pt-2 gap-2">
         <Button variant="ghost" className="bg-[#EDF1F7] text-[#4F5C72] font-bold" onClick={onClose} disabled={saving}>

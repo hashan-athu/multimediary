@@ -51,6 +51,18 @@ module Api
           render json: { error: e.message }, status: :bad_gateway
         end
 
+        # POST /api/v1/admin/movies/tmdb_preview
+        def tmdb_preview
+          authorize! :read, Movie
+          tmdb_id = params[:tmdb_id]
+          return render json: { error: "tmdb_id required" }, status: :bad_request if tmdb_id.blank?
+
+          data = TmdbService.new.movie_detail(tmdb_id)
+          render json: data
+        rescue TmdbService::TmdbError => e
+          render json: { error: e.message }, status: :bad_gateway
+        end
+
         # POST /api/v1/admin/movies/tmdb_import
         def tmdb_import
           authorize! :create, Movie
@@ -89,6 +101,18 @@ module Api
             )
             @movie.genres  = genres
             @movie.actors  = actors
+
+            if data[:vote_average].to_f > 0
+              tmdb_reviewer = Reviewer.find_or_create_by!(name: "TMDb") do |r|
+                r.website_url = "https://www.themoviedb.org"
+              end
+              Rating.create!(
+                movie_id:     @movie.id,
+                reviewer:     tmdb_reviewer,
+                rating_value: data[:vote_average].to_f.round(1),
+                rating_out_of: 10
+              )
+            end
           end
 
           render_success(
@@ -112,7 +136,7 @@ module Api
           params.require(:movie).permit(
             :name, :year, :language, :country, :description, :story,
             :tagline, :runtime, :file_size, :version, :poster_url,
-            :disk_id, :category_id, :director_id,
+            :disk_id, :category_id, :director_id, :tmdb_id,
             actor_ids: [], genre_ids: [], quality_ids: []
           )
         end

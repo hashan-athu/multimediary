@@ -22,6 +22,7 @@ import { Button } from "@/components/ui/button";
 import { Avatar, AvatarFallback } from "@/components/ui/avatar";
 import { apiClient } from "@/lib/api";
 import { useRouter } from "next/navigation";
+import ConfirmDialog from "@/components/shared/ConfirmDialog";
 
 const NAV_ITEMS = [
   { label: "Dashboard", href: "/admin/dashboard", icon: LayoutDashboard },
@@ -176,14 +177,21 @@ export default function Sidebar() {
           </p>
         </div>
 
-        <Button 
-          variant="ghost" 
-          size="icon" 
-          className="text-[#8892B0] hover:text-white hover:bg-white/10 shrink-0"
-          onClick={handleLogout}
+        <ConfirmDialog
+          title="Log out?"
+          description="You will be returned to the login screen."
+          confirmLabel="Log Out"
+          onConfirm={handleLogout}
         >
-          <Power size={18} />
-        </Button>
+          <Button
+            variant="ghost"
+            size="icon"
+            type="button"
+            className="text-[#8892B0] hover:text-white hover:bg-white/10 shrink-0"
+          >
+            <Power size={18} />
+          </Button>
+        </ConfirmDialog>
       </div>
 
       {/* Collapse Toggle (Desktop only) */}

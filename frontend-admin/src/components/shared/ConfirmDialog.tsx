@@ -15,11 +15,13 @@ import { cn } from "@/lib/utils";
 
 interface ConfirmDialogProps {
   title: string;
-  description: string;
+  description: string | ReactNode;
   confirmLabel?: string;
   variant?: "destructive" | "default";
   onConfirm: () => void;
-  children: ReactNode;
+  children?: ReactNode;
+  open?: boolean;
+  onOpenChange?: (open: boolean) => void;
 }
 
 export default function ConfirmDialog({
@@ -29,13 +31,19 @@ export default function ConfirmDialog({
   variant = "default",
   onConfirm,
   children,
+  open: controlledOpen,
+  onOpenChange: controlledOnOpenChange,
 }: ConfirmDialogProps) {
-  const [open, setOpen] = useState(false);
+  const [internalOpen, setInternalOpen] = useState(false);
 
-  const trigger = isValidElement<{ onClick?: React.MouseEventHandler }>(children)
+  const isControlled = controlledOpen !== undefined;
+  const open = isControlled ? controlledOpen : internalOpen;
+  const setOpen = isControlled ? (controlledOnOpenChange ?? (() => {})) : setInternalOpen;
+
+  const trigger = children && isValidElement<{ onClick?: React.MouseEventHandler }>(children)
     ? cloneElement(children, {
         onClick: (e: React.MouseEvent) => {
-          children.props.onClick?.(e);
+          (children.props as { onClick?: React.MouseEventHandler }).onClick?.(e);
           setOpen(true);
         },
       })

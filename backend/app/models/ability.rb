@@ -16,12 +16,14 @@ class Ability
       can :read, :dashboard
       can :read, User
       cannot :destroy, User
+      can :create, :upload
 
     when "editor"
       can :manage, [ Movie, Actor, Director, Genre, Category, Quality,
                      Disk, DiskFormat, Reviewer, Rating ]
       can :read, :dashboard
       cannot :destroy, [ Disk, DiskFormat, Category, Genre, Quality, Reviewer ]
+      can :create, :upload
 
     when "analyst"
       can :read, [ Movie, Actor, Director, Genre, Category, Quality,

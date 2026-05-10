@@ -166,6 +166,7 @@ export default function UsersPage() {
   const [search, setSearch] = useState("");
   const [inviteOpen, setInviteOpen] = useState(false);
   const [changeRoleTarget, setChangeRoleTarget] = useState<User | null>(null);
+  const [userToDelete, setUserToDelete] = useState<User | null>(null);
 
   const { data, isLoading } = useQuery({
     queryKey: ["users"],
@@ -245,25 +246,17 @@ export default function UsersPage() {
               <DropdownMenuContent align="end" className="w-48 rounded-xl border-[#E0E8EF] shadow-xl">
                 <DropdownMenuItem
                   className="gap-2 cursor-pointer py-2 font-medium"
-                  onSelect={() => setChangeRoleTarget(row.original)}
+                  onClick={() => setChangeRoleTarget(row.original)}
                 >
                   <Shield size={14} className="text-[#4299EB]" /> Change Role
                 </DropdownMenuItem>
                 <DropdownMenuSeparator />
-                <ConfirmDialog
-                  title={`Remove ${row.original.email}?`}
-                  description="This user will lose all access. This cannot be undone."
-                  confirmLabel="Remove User"
-                  variant="destructive"
-                  onConfirm={() => handleDelete(row.original)}
+                <DropdownMenuItem
+                  className="gap-2 cursor-pointer py-2 font-medium text-[#F25959]"
+                  onClick={() => setUserToDelete(row.original)}
                 >
-                  <DropdownMenuItem
-                    onSelect={(e) => e.preventDefault()}
-                    className="gap-2 cursor-pointer py-2 font-medium text-[#F25959]"
-                  >
-                    <Trash2 size={14} /> Remove User
-                  </DropdownMenuItem>
-                </ConfirmDialog>
+                  <Trash2 size={14} /> Remove User
+                </DropdownMenuItem>
               </DropdownMenuContent>
             </DropdownMenu>
           </div>
@@ -338,6 +331,15 @@ export default function UsersPage() {
         open={changeRoleTarget !== null}
         onClose={() => setChangeRoleTarget(null)}
         onSaved={handleSaved}
+      />
+      <ConfirmDialog
+        title={userToDelete ? `Remove ${userToDelete.email}?` : "Remove user?"}
+        description="This user will lose all access. This cannot be undone."
+        confirmLabel="Remove User"
+        variant="destructive"
+        open={userToDelete !== null}
+        onOpenChange={(open) => { if (!open) setUserToDelete(null); }}
+        onConfirm={() => { if (userToDelete) handleDelete(userToDelete); }}
       />
     </div>
   );

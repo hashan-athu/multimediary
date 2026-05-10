@@ -1,23 +1,18 @@
 import type { Metadata } from "next";
-import { Geist, Geist_Mono } from "next/font/google";
+import { Inter } from "next/font/google";
 import "./globals.css";
-import { AuthProvider } from "@/context/AuthContext";
 import { Toaster } from "@/components/ui/sonner";
 import { TooltipProvider } from "@/components/ui/tooltip";
+import Providers from "@/components/shared/Providers";
 
-const geistSans = Geist({
-  variable: "--font-geist-sans",
+const inter = Inter({
   subsets: ["latin"],
-});
-
-const geistMono = Geist_Mono({
-  variable: "--font-geist-mono",
-  subsets: ["latin"],
+  variable: "--font-sans",
 });
 
 export const metadata: Metadata = {
-  title: "Cinematic Admin",
-  description: "Multimediary Admin Dashboard",
+  title: "Multimediary Admin",
+  description: "Personal physical media library management system",
 };
 
 export default function RootLayout({
@@ -26,17 +21,14 @@ export default function RootLayout({
   children: React.ReactNode;
 }>) {
   return (
-    <html
-      lang="en"
-      className={`${geistSans.variable} ${geistMono.variable} h-full antialiased dark`}
-    >
-      <body className="min-h-full flex flex-col bg-zinc-950 text-zinc-50">
-        <TooltipProvider>
-          <AuthProvider>
+    <html lang="en" className={`${inter.variable} h-full antialiased`}>
+      <body className="min-h-full font-sans bg-bg text-text-1">
+        <Providers>
+          <TooltipProvider>
             {children}
-            <Toaster theme="dark" />
-          </AuthProvider>
-        </TooltipProvider>
+            <Toaster richColors closeButton position="top-right" />
+          </TooltipProvider>
+        </Providers>
       </body>
     </html>
   );

@@ -1,105 +1,204 @@
-'use client';
+"use client";
 
-import { useState } from 'react';
-import { useAuth } from '@/context/AuthContext';
-import { fetchApi } from '@/lib/api';
-import { Card, CardContent, CardDescription, CardFooter, CardHeader, CardTitle } from '@/components/ui/card';
-import { Input } from '@/components/ui/input';
-import { Button } from '@/components/ui/button';
-import { Film } from 'lucide-react';
-import { toast } from 'sonner';
+import { useState } from "react";
+import { useForm } from "react-hook-form";
+import { zodResolver } from "@hookform/resolvers/zod";
+import * as z from "zod";
+import { useRouter } from "next/navigation";
+import { Eye, EyeOff, Film, HardDrive, Download, AlertCircle, Loader2 } from "lucide-react";
+import { Button } from "@/components/ui/button";
+import { Input } from "@/components/ui/input";
+import {
+  Form,
+  FormControl,
+  FormField,
+  FormItem,
+  FormLabel,
+  FormMessage,
+} from "@/components/ui/form";
+import { toast } from "sonner";
+import { useAuthStore } from "@/store/authStore";
+import { apiClient } from "@/lib/api";
+
+const loginSchema = z.object({
+  email: z.string().email("Invalid email address"),
+  password: z.string().min(6, "Password must be at least 6 characters"),
+});
+
+type LoginFormValues = z.infer<typeof loginSchema>;
 
 export default function LoginPage() {
-  const [email, setEmail] = useState('');
-  const [password, setPassword] = useState('');
-  const [loading, setLoading] = useState(false);
-  const { login } = useAuth();
+  const [showPassword, setShowPassword] = useState(false);
+  const [isLoading, setIsLoading] = useState(false);
+  const router = useRouter();
+  const { setUser, setToken } = useAuthStore();
 
-  const handleSubmit = async (e: React.FormEvent) => {
-    e.preventDefault();
-    setLoading(true);
+  const form = useForm<LoginFormValues>({
+    resolver: zodResolver(loginSchema),
+    defaultValues: {
+      email: "",
+      password: "",
+    },
+  });
+
+  async function onSubmit(values: LoginFormValues) {
+    setIsLoading(true);
     try {
-      const response = await fetchApi('/admin/login', {
-        method: 'POST',
-        body: JSON.stringify({ user: { email, password } }),
-      });
-
-      if (!response.ok) {
-        throw new Error('Invalid credentials');
-      }
-
-      // the API returns JWT in the Authorization header
-      const token = response.headers.get('Authorization')?.replace('Bearer ', '');
-      const userData = await response.json();
+      const response = await apiClient.auth.login(values);
+      const token = response.headers.authorization?.split(" ")[1];
+      const userData = response.data;
 
       if (token) {
-        login(token, userData);
-        toast.success('Welcome back to the Cinematic Admin');
-      } else {
-        throw new Error('Token missing from response headers');
+        setToken(token);
+        setUser(userData);
+        
+        // Also set cookie for middleware (simplified for this generation)
+        document.cookie = `auth_token=${token}; path=/; max-age=86400; samesite=lax`;
+        
+        toast.success("Welcome back!");
+        router.push("/admin/dashboard");
       }
-    } catch (err: any) {
-      toast.error(err.message || 'Failed to login');
+    } catch (error: any) {
+      toast.error(error.response?.data?.error || "Invalid credentials");
     } finally {
-      setLoading(false);
+      setIsLoading(false);
     }
-  };
+  }
 
   return (
-    <div className="min-h-screen flex items-center justify-center bg-zinc-950 relative overflow-hidden">
-      {/* Background cinematic blur effect */}
-      <div className="absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 w-[800px] h-[600px] bg-teal-900/20 blur-[120px] rounded-full pointer-events-none" />
-      
-      <div className="z-10 w-full max-w-md p-4">
-        <div className="flex flex-col items-center mb-8">
-          <div className="bg-teal-600/20 p-3 rounded-full mb-4">
-            <Film className="w-8 h-8 text-teal-400" />
+    <div className="min-h-screen flex flex-col md:flex-row bg-[#F4F5F8]">
+      {/* Left Panel - Brand */}
+      <div className="hidden md:flex flex-col justify-between w-1/2 bg-[#16213E] p-12 text-white relative overflow-hidden">
+        {/* Background Accent */}
+        <div className="absolute top-0 right-0 w-64 h-64 bg-[#4299EB] opacity-10 rounded-full -translate-y-1/2 translate-x-1/2 blur-3xl"></div>
+        <div className="absolute bottom-0 left-0 w-96 h-96 bg-[#9A62FA] opacity-10 rounded-full translate-y-1/2 -translate-x-1/2 blur-3xl"></div>
+
+        <div>
+          <div className="flex items-center gap-3 mb-12">
+            <div className="w-10 h-10 rounded-full bg-[#4299EB] flex items-center justify-center font-bold text-white text-xl">
+              M
+            </div>
+            <span className="font-bold text-2xl tracking-tight">Multimediary</span>
           </div>
-          <h1 className="text-3xl font-bold tracking-tight text-zinc-100">Multimediary</h1>
-          <p className="text-zinc-400">Cinematic Admin Dashboard</p>
+
+          <h1 className="text-5xl font-bold leading-tight mb-6 max-w-md">
+            Your personal media library, organized.
+          </h1>
+          <p className="text-[#8892B0] text-lg mb-12">
+            700+ movies · DVDs & HDDs · TMDb auto-import
+          </p>
+
+          <div className="space-y-6">
+            <div className="flex items-center gap-4">
+              <div className="w-10 h-10 rounded-xl bg-white/5 flex items-center justify-center text-[#4299EB]">
+                <Film size={20} />
+              </div>
+              <p className="font-medium">Movie & TV series catalogue</p>
+            </div>
+            <div className="flex items-center gap-4">
+              <div className="w-10 h-10 rounded-xl bg-white/5 flex items-center justify-center text-[#46BB78]">
+                <HardDrive size={20} />
+              </div>
+              <p className="font-medium">Physical disk tracking (DVD, HDD, Blu-ray)</p>
+            </div>
+            <div className="flex items-center gap-4">
+              <div className="w-10 h-10 rounded-xl bg-white/5 flex items-center justify-center text-[#9A62FA]">
+                <Download size={20} />
+              </div>
+              <p className="font-medium">TMDb metadata auto-import</p>
+            </div>
+          </div>
         </div>
 
-        <Card className="bg-zinc-900/50 border-zinc-800 backdrop-blur-xl shadow-2xl">
-          <CardHeader>
-            <CardTitle>Sign In</CardTitle>
-            <CardDescription>Enter your credentials to access the admin portal.</CardDescription>
-          </CardHeader>
-          <form onSubmit={handleSubmit}>
-            <CardContent className="space-y-4">
-              <div className="space-y-2">
-                <label className="text-sm font-medium text-zinc-300">Email</label>
-                <Input 
-                  type="email" 
-                  value={email}
-                  onChange={(e) => setEmail(e.target.value)}
-                  placeholder="admin@example.com"
-                  className="bg-zinc-950/50 border-zinc-800 focus-visible:ring-teal-500"
-                  required
-                />
+        <div className="text-[#8892B0] text-sm font-medium">
+          Multimediary Admin · v1.0
+        </div>
+      </div>
+
+      {/* Right Panel - Login Form */}
+      <div className="flex-1 flex items-center justify-center p-6 bg-[#F4F5F8]">
+        <div className="w-full max-w-[420px] animate-in fade-in slide-in-from-bottom-4 duration-500">
+          <div className="bg-white rounded-2xl shadow-sm border border-[#E0E8EF] p-10">
+            <div className="flex flex-col items-center text-center mb-8">
+              <div className="w-20 h-20 rounded-full bg-[#EDF1F7] flex items-center justify-center mb-6 border-4 border-white shadow-sm">
+                <div className="w-12 h-12 rounded-full bg-[#4299EB] flex items-center justify-center font-bold text-white text-2xl">
+                  M
+                </div>
               </div>
-              <div className="space-y-2">
-                <label className="text-sm font-medium text-zinc-300">Password</label>
-                <Input 
-                  type="password" 
-                  value={password}
-                  onChange={(e) => setPassword(e.target.value)}
-                  placeholder="••••••••"
-                  className="bg-zinc-950/50 border-zinc-800 focus-visible:ring-teal-500"
-                  required
+              <h2 className="text-2xl font-bold text-[#1C2238] mb-1">Welcome back</h2>
+              <p className="text-[#4F5C72] font-medium">Sign in to your admin panel</p>
+            </div>
+
+            <Form {...form}>
+              <form onSubmit={form.handleSubmit(onSubmit)} className="space-y-6">
+                <FormField
+                  control={form.control}
+                  name="email"
+                  render={({ field }) => (
+                    <FormItem>
+                      <FormLabel className="text-[#4F5C72] font-bold text-[11px] uppercase tracking-wider">Email Address</FormLabel>
+                      <FormControl>
+                        <Input 
+                          placeholder="admin@multimediary.com" 
+                          className="bg-[#EDF1F7] border-none h-11 rounded-lg focus-visible:ring-2 focus-visible:ring-[#4299EB]"
+                          {...field} 
+                        />
+                      </FormControl>
+                      <FormMessage />
+                    </FormItem>
+                  )}
                 />
-              </div>
-            </CardContent>
-            <CardFooter>
-              <Button 
-                type="submit" 
-                className="w-full bg-teal-600 hover:bg-teal-500 text-white transition-colors"
-                disabled={loading}
-              >
-                {loading ? 'Authenticating...' : 'Sign In'}
-              </Button>
-            </CardFooter>
-          </form>
-        </Card>
+
+                <FormField
+                  control={form.control}
+                  name="password"
+                  render={({ field }) => (
+                    <FormItem>
+                      <FormLabel className="text-[#4F5C72] font-bold text-[11px] uppercase tracking-wider">Password</FormLabel>
+                      <div className="relative">
+                        <FormControl>
+                          <Input 
+                            type={showPassword ? "text" : "password"} 
+                            placeholder="••••••••" 
+                            className="bg-[#EDF1F7] border-none h-11 rounded-lg focus-visible:ring-2 focus-visible:ring-[#4299EB] pr-10"
+                            {...field} 
+                          />
+                        </FormControl>
+                        <button
+                          type="button"
+                          onClick={() => setShowPassword(!showPassword)}
+                          className="absolute right-3 top-1/2 -translate-y-1/2 text-[#9AA5B8] hover:text-[#4F5C72] transition-colors"
+                        >
+                          {showPassword ? <EyeOff size={18} /> : <Eye size={18} />}
+                        </button>
+                      </div>
+                      <FormMessage />
+                    </FormItem>
+                  )}
+                />
+
+                <div className="bg-[#4299EB]/10 rounded-lg p-4 flex gap-3 border border-[#4299EB]/20">
+                  <AlertCircle size={18} className="text-[#4299EB] shrink-0 mt-0.5" />
+                  <p className="text-[12px] leading-relaxed text-[#4299EB] font-medium">
+                    One active session is enforced — sign out elsewhere before logging in.
+                  </p>
+                </div>
+
+                <Button 
+                  type="submit" 
+                  disabled={isLoading}
+                  className="w-full h-11 bg-[#4299EB] hover:bg-[#3182CE] text-white font-bold rounded-lg shadow-sm transition-all active:scale-[0.98]"
+                >
+                  {isLoading ? (
+                    <Loader2 className="mr-2 h-4 w-4 animate-spin" />
+                  ) : (
+                    "Sign In"
+                  )}
+                </Button>
+              </form>
+            </Form>
+          </div>
+        </div>
       </div>
     </div>
   );

@@ -73,7 +73,11 @@ export default function DashboardPage() {
         />
         <StatCard
           label="Storage Used"
-          value={`${stats?.storage.total_gb || 0} GB`}
+          value={(() => {
+            const mb = stats?.storage?.total_gb || 0;
+            if (mb < 1024) return `${mb} MB`;
+            return `${(mb / 1024).toFixed(1)} GB`;
+          })()}
           subLabel="Across all media"
           accentColor="#F5BD32"
           icon={Database}

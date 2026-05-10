@@ -2,7 +2,9 @@
 
 Rails.application.config.middleware.insert_before 0, Rack::Cors do
   allow do
-    origins ENV.fetch("CORS_ALLOWED_ORIGINS", "http://localhost:3000").split(",")
+    origins ENV.fetch("CORS_ALLOWED_ORIGINS", "http://localhost:3000,http://localhost:3001")
+              .split(",")
+              .map(&:strip)
 
     resource "/api/*",
              headers: :any,

@@ -3,28 +3,63 @@
 module Api
   module V1
     module Public
-      class MoviesController < Api::V1::Public::BaseController
+      class MoviesController < BaseController
+
+        # GET /api/v1/public/movies
         def index
           @movies = Movie.includes(:category, :disk, :genres, :qualities)
-                         .order(name: :asc)
-          @movies = @movies.ransack(params[:q]).result if params[:q].present?
-          @movies = @movies.page(params[:page]).per(params[:per_page] || 25)
+          @movies = @movies.ransack(ransack_params).result if ransack_params.present?
+          @movies = apply_sort(@movies, default_column: :name, default_direction: :asc)
+          @movies = paginate(@movies)
 
           render json: {
-            movies: MovieSerializer.render_as_hash(@movies, view: :list),
-            meta: {
-              current_page: @movies.current_page,
-              total_pages: @movies.total_pages,
-              total_count: @movies.total_count,
-              per_page: @movies.limit_value
-            }
+            movies: ::Public::MovieCardSerializer.render_as_hash(@movies),
+            meta:   pagination_meta(@movies)
           }
         end
 
+        # GET /api/v1/public/movies/:id
         def show
-          @movie = Movie.includes(:director, :actors, :genres, :ratings, :category, :disk, :qualities)
-                        .find(params[:id])
-          render json: { movie: MovieSerializer.render_as_hash(@movie, view: :detail) }
+          @movie = Movie.includes(
+            :category, :genres, :qualities, :director,
+            :actors, :disk, { ratings: :reviewer }
+          ).find(params[:id])
+
+          render json: {
+            movie: ::Public::MovieDetailSerializer.render_as_hash(@movie)
+          }
+        end
+
+        # GET /api/v1/public/movies/recent
+        def recent
+          count = [(params[:count] || 12).to_i, 48].min
+          @movies = Movie.includes(:category, :disk, :genres, :qualities)
+                         .where.not(poster_url: [ nil, "" ])
+                         .order(created_at: :desc)
+                         .limit(count)
+
+          render json: {
+            movies: ::Public::MovieCardSerializer.render_as_hash(@movies)
+          }
+        end
+
+        # GET /api/v1/public/movies/random
+        def random
+          count = [(params[:count] || 8).to_i, 24].min
+          @movies = Movie.includes(:category, :disk, :genres, :qualities)
+                         .where.not(poster_url: [ nil, "" ])
+                         .order(Arel.sql("RANDOM()"))
+                         .limit(count)
+
+          render json: {
+            movies: ::Public::MovieCardSerializer.render_as_hash(@movies)
+          }
+        end
+
+        private
+
+        def ransack_params
+          params.permit(q: {}).dig(:q) || {}
         end
       end
     end

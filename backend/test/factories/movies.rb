@@ -6,5 +6,9 @@ FactoryBot.define do
     association :disk
     association :category
     association :director
+
+    trait :with_poster do
+      poster_url { "https://image.tmdb.org/t/p/w500/example.jpg" }
+    end
   end
 end

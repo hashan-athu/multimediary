@@ -42,12 +42,27 @@ Rails.application.routes.draw do
         resource :upload, only: [ :create ]
       end
 
-      # ── Public namespace (read-only, future frontend) ─────────────────
+      # ── Public namespace (read-only, no auth required) ───────────────
       namespace :public do
         namespace :auth do
           resource :session, only: [ :create ]
         end
-        resources :movies, only: [ :index, :show ]
+
+        resources :movies, only: [ :index, :show ] do
+          collection do
+            get :recent
+            get :random
+          end
+        end
+
+        resources :categories, only: [ :index, :show ]
+        resources :genres,     only: [ :index, :show ]
+        resources :actors,     only: [ :index, :show ]
+        resources :directors,  only: [ :index, :show ]
+        resources :disks,      only: [ :index, :show ]
+
+        get "search", to: "search#index"
+        get "stats",  to: "stats#show"
       end
     end
   end

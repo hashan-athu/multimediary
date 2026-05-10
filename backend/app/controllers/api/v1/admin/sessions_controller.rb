@@ -63,26 +63,8 @@ class Api::V1::Admin::SessionsController < Devise::SessionsController
   end
 
   def check_existing_session
-    # Check if the user trying to log in already has an active session
-    email = params.dig(:user, :email)
-    return unless email
-
-    user = User.find_by(email: email)
-    if user && user.active_token.present?
-      begin
-        # Verify if the stored token is still valid
-        Warden::JWTAuth::UserDecoder.new.call(user.active_token, :api_v1_admin_user, nil)
-
-        # If decode succeeds, the session is active
-        render json: {
-          message: "You are already logged in.",
-          error: "Session already active"
-        }, status: :forbidden
-      rescue => e
-        # Token expired or invalid, allow new login
-        # Optional: Clear the invalid token? user.update_column(:active_token, nil)
-      end
-    end
+    # Single-session enforcement disabled for better development experience
+    nil
   end
 
   private

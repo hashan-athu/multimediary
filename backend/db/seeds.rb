@@ -111,4 +111,12 @@ create_movie(
   "Hobbs has Dominic and Brian reassemble their crew to take down a team of mercenaries: Dominic unexpectedly gets sidetracked with facing his presumed deceased girlfriend, Letty."
 )
 
+# 7. Users
+User.find_or_create_by!(email: "admin@example.com") do |user|
+  user.password = "password123"
+  user.password_confirmation = "password123"
+  user.role = "super_admin"
+end
+puts "Created/Found Super Admin: admin@example.com"
+
 puts "Seeding completed successfully!"

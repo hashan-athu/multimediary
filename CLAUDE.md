@@ -4,7 +4,11 @@ This file provides guidance to Claude Code (claude.ai/code) when working with co
 
 ## Project Overview
 
-Multimediary is a physical media library management system (DVD/Blu-ray collections). It is a monorepo with a Rails 8.1 API-only backend in `backend/`. A Next.js frontend is planned but not yet started.
+Multimediary is a physical media library management system (DVD/Blu-ray collections). Monorepo with three active directories:
+
+- `backend/` — Rails 8.1 API-only backend (PostgreSQL, Devise JWT, CanCanCan)
+- `frontend/` — Unified Next.js 16.2.6 app: public movie browser (`/`) + admin panel (`/admin/*`), port 3000
+- `docs/` — Docusaurus API documentation
 
 ## Backend Commands
 
@@ -227,6 +231,92 @@ Kamal + Docker (`config/deploy.yml`). Thruster in front of Puma for HTTP caching
 
 ## What Is Not Yet Built
 
-- **No frontend** — Next.js app is planned but not started
 - **Public sessions controller** is a placeholder (returns a static token from credentials); proper public auth (anonymous JWT or API key) not implemented
 - **`file_size` column is a string** — validated as numeric by the model but stored as `string` in the schema. `Movie.sum(:file_size)` will fail in PostgreSQL; use `.pluck(:file_size).sum(&:to_f)` instead (as done in the dashboard). A migration to `decimal` is a future task.
+
+---
+
+## Frontend
+
+**Both Next.js apps are on version 16.2.6, which has breaking changes from older versions.** Before writing any Next.js-specific code (routing, data fetching, image config, middleware) check `node_modules/next/dist/docs/` for the current API.
+
+### Frontend (`frontend/`) — unified public + admin
+
+```bash
+cd frontend
+npm run dev    # http://localhost:3000
+npm run build
+npm run lint
+```
+
+**No env file needed for local dev.** The Next.js proxy rewrites `/api/*` to `http://127.0.0.1:3001/api/*`. Override the backend URL with `NEXT_PUBLIC_API_URL`. Set `NEXT_PUBLIC_SITE_URL` for the "Visit Site" link in the admin topbar.
+
+**Route structure:**
+
+| URL pattern | Location | Notes |
+|---|---|---|
+| `/` and public pages | `src/app/(public)/` | Dark cinematic theme |
+| `/admin/*` | `src/app/admin/` | Light theme, JWT required |
+| `/admin/login` | `src/app/admin/login/` | Only unprotected admin route |
+
+**Route protection:** `src/proxy.ts` (Next.js 16 renames `middleware` → `proxy`) guards all `/admin/*` routes using the `mm_token` cookie.
+
+**API clients — two separate modules:**
+
+- `src/lib/api.ts` — public API (`/api/v1/public/*`), no auth, used by public pages
+- `src/lib/adminApi.ts` — admin API (`/api/v1/admin/*`), JWT auth, used by all admin pages/components. Exports `apiClient`, `extractApiError`, `getCookieToken`, `api` (axios instance).
+
+Never call the admin axios instance directly — use `apiClient.<resource>.<method>()`.
+
+**Auth flow (admin):**
+
+1. `src/proxy.ts` redirects to `/admin/login` when `mm_token` cookie is absent.
+2. `AdminShell` (`src/components/layout/AdminShell.tsx`) restores session on mount: reads `mm_token` cookie → decodes JWT → hydrates Zustand store.
+3. On 401, the Axios interceptor calls `clearAuth()`, deletes the cookie, and redirects to `/admin/login`.
+4. Auth state: Zustand store (`src/store/authStore.ts`) persisted to localStorage under key `mm-auth`. Fields: `user`, `token`, `clearAuth()`.
+
+**All admin pages use `"use client"`** — no server components in admin.
+
+**Component locations:**
+
+| Path | Contents |
+|---|---|
+| `src/components/` | Public components (Header, Footer, HeroCarousel, MovieCard, etc.) |
+| `src/components/layout/` | Admin layout shell (AdminShell, Sidebar, Topbar, GlobalSearch, NotificationBell) |
+| `src/components/movies/` | Admin movie forms (UnifiedMovieForm, TMDbEnrichmentPanel, CastSelector, DirectorSelector) |
+| `src/components/shared/` | Admin shared (DataTable, ConfirmDialog, PageHeader, PosterImage, Badges, StatCard, EmptyState, ImageUploadField) |
+| `src/components/ui/` | shadcn/ui base components |
+
+**UI primitives — critical gotcha:** `src/components/ui/` are shadcn components built on **`@base-ui/react`**, NOT Radix UI. `DropdownMenuItem` only fires `onClick`, not `onSelect`. Never use `onSelect` on dropdown items.
+
+**`ConfirmDialog`** (`src/components/shared/ConfirmDialog.tsx`) supports controlled and uncontrolled modes. Always use controlled mode (`open`/`onOpenChange` props) when triggering from inside a dropdown — the portal unmounts the trigger otherwise.
+
+**`ImageUploadField`** uses plain `<img>` (not `next/image`). `POST /api/v1/admin/upload` accepts `multipart/form-data` with a `file` field; returns `{ url: "/uploads/filename" }`.
+
+**Theme system:** All tokens in `src/styles/theme.css` (Tailwind v4 `@theme` + `:root` block).
+
+Public (cinematic dark):
+
+| Token | Purpose |
+|---|---|
+| `--color-bg-deep` (`#05070A`) | Page background |
+| `--color-brand-primary` (`#E50914`) | CTA buttons |
+| `--color-brand-secondary` (`#00D1FF`) | Accents |
+| `--color-accent` (`#F5BD32`) | Gold highlights |
+| `.glass-panel` | Glassmorphism utility class |
+
+Admin (light, uses Tailwind `bg-admin-*` utilities + `var(--admin-*)` CSS vars):
+
+| Tailwind class | Hex | Usage |
+|---|---|---|
+| `bg-admin-sidebar` | `#16213E` | Sidebar background |
+| `bg-admin-primary` | `#4299EB` | Buttons, links, active states |
+| `bg-admin-danger` | `#F25959` | Delete actions |
+| `text-admin-text-1` | `#1C2238` | Headings |
+| `text-admin-text-2` | `#4F5C72` | Body text |
+| `bg-admin-plate` | `#EDF1F7` | Input backgrounds, chips |
+| `border-admin-border` | `#E0E8EF` | Card/table borders |
+
+Shadcn token overrides (`--color-primary`, `--color-destructive`, etc.) are also in `theme.css` so admin UI components render correctly.
+
+**Types:** `src/types/index.ts` covers both public and admin. Key distinction: `MovieList` (lightweight, public/list views) vs `MovieDetail` (extends `MovieList` with `description`, `director`, `actors[]`, `ratings[]`)..

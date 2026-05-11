@@ -2,10 +2,12 @@
 
 import React, { useCallback, useEffect, useState } from "react";
 import useEmblaCarousel from "embla-carousel-react";
-import { ChevronLeft, ChevronRight, Play, Info, Calendar, Clock, Star } from "lucide-react";
+import { ChevronLeft, ChevronRight, Play, Info, Calendar, Clock } from "lucide-react";
 import { Movie } from "@/types";
 import { motion, AnimatePresence } from "framer-motion";
 import { cn } from "@/lib/utils";
+import Link from "next/link";
+import { Tooltip, TooltipTrigger, TooltipContent } from "@/components/ui/tooltip";
 
 interface HeroCarouselProps {
   movies: Movie[];
@@ -38,7 +40,6 @@ export default function HeroCarousel({ movies }: HeroCarouselProps) {
         <div className="flex h-full">
           {movies.map((movie, index) => (
             <div key={movie.id} className="flex-[0_0_100%] min-w-0 relative h-full">
-              {/* Backdrop Image with Gradient Overlay */}
               <div className="absolute inset-0">
                 <img
                   src={movie.poster_url || "/placeholder-hero.jpg"}
@@ -49,7 +50,6 @@ export default function HeroCarousel({ movies }: HeroCarouselProps) {
                 <div className="absolute inset-0 bg-gradient-to-t from-bg-deep via-transparent to-transparent" />
               </div>
 
-              {/* Content Container */}
               <div className="relative h-full max-w-7xl mx-auto px-6 md:px-12 flex flex-col justify-center">
                 <AnimatePresence mode="wait">
                   {selectedIndex === index && (
@@ -72,39 +72,45 @@ export default function HeroCarousel({ movies }: HeroCarouselProps) {
                       </h1>
 
                       <div className="flex items-center gap-6 text-text-dim font-semibold">
-                        <div className="flex items-center gap-1">
-                          <Calendar size={18} className="text-accent" />
-                          <span>{movie.year}</span>
-                        </div>
-                        <div className="flex items-center gap-1">
-                          <Clock size={18} className="text-accent" />
-                          <span>{movie.runtime} min</span>
-                        </div>
-                        <div className="flex items-center gap-1">
-                          <Star size={18} className="text-accent fill-accent" />
-                          <span>8.4</span>
-                        </div>
+                        {movie.year && (
+                          <div className="flex items-center gap-1">
+                            <Calendar size={18} className="text-accent" />
+                            <span>{movie.year}</span>
+                          </div>
+                        )}
+                        {movie.runtime && (
+                          <div className="flex items-center gap-1">
+                            <Clock size={18} className="text-accent" />
+                            <span>{movie.runtime} min</span>
+                          </div>
+                        )}
+                        {movie.genres.slice(0, 2).map((g) => (
+                          <span key={g.id} className="text-text-dim text-sm font-bold uppercase tracking-wider">
+                            {g.name}
+                          </span>
+                        ))}
                       </div>
 
                       <p className="text-lg text-text-dim leading-relaxed line-clamp-3 max-w-xl">
-                        {movie.tagline || movie.description || "Experience the ultimate cinematic journey with this masterpiece."}
+                        {movie.tagline || "Experience the ultimate cinematic journey with this masterpiece."}
                       </p>
 
                       <div className="flex items-center gap-4 pt-4">
-                        <button 
-                          className="btn-primary py-4 px-10 text-lg group"
-                          onClick={() => alert(`Playing trailer for: ${movie.name}`)}
-                        >
-                          <Play size={20} fill="currentColor" />
-                          Watch Trailer
-                        </button>
-                        <button 
-                          className="btn-secondary py-4 px-10 text-lg"
-                          onClick={() => alert(`Viewing info for: ${movie.name}`)}
+                        <Tooltip>
+                          <TooltipTrigger className="btn-primary py-4 px-10 text-lg flex items-center gap-2">
+                            <Play size={20} fill="currentColor" />
+                            Watch Trailer
+                          </TooltipTrigger>
+                          <TooltipContent side="bottom">Coming Soon</TooltipContent>
+                        </Tooltip>
+
+                        <Link
+                          href={`/movies/${movie.id}`}
+                          className="btn-secondary py-4 px-10 text-lg flex items-center gap-2"
                         >
                           <Info size={20} />
                           More Info
-                        </button>
+                        </Link>
                       </div>
                     </motion.div>
                   )}
@@ -118,22 +124,14 @@ export default function HeroCarousel({ movies }: HeroCarouselProps) {
       {/* Controls */}
       <div className="absolute bottom-12 right-12 flex items-center gap-4 z-40">
         <button
-          onClick={(e) => {
-            console.log("Prev clicked");
-            e.stopPropagation();
-            scrollPrev();
-          }}
+          onClick={(e) => { e.stopPropagation(); scrollPrev(); }}
           className="btn-icon w-14 h-14 border-white/10 text-white hover:bg-brand-primary hover:border-brand-primary transition-all shadow-2xl pointer-events-auto"
           aria-label="Previous slide"
         >
           <ChevronLeft size={28} />
         </button>
         <button
-          onClick={(e) => {
-            console.log("Next clicked");
-            e.stopPropagation();
-            scrollNext();
-          }}
+          onClick={(e) => { e.stopPropagation(); scrollNext(); }}
           className="btn-icon w-14 h-14 border-white/10 text-white hover:bg-brand-primary hover:border-brand-primary transition-all shadow-2xl pointer-events-auto"
           aria-label="Next slide"
         >
@@ -146,10 +144,7 @@ export default function HeroCarousel({ movies }: HeroCarouselProps) {
         {movies.map((_, index) => (
           <button
             key={index}
-            onClick={(e) => {
-              e.stopPropagation();
-              emblaApi?.scrollTo(index);
-            }}
+            onClick={(e) => { e.stopPropagation(); emblaApi?.scrollTo(index); }}
             className={cn(
               "h-1.5 transition-all duration-500 rounded-full cursor-pointer pointer-events-auto",
               selectedIndex === index ? "w-12 bg-brand-primary" : "w-3 bg-white/20 hover:bg-white/40"

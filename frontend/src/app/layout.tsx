@@ -2,6 +2,8 @@ import type { Metadata } from "next";
 import { Inter, Outfit } from "next/font/google";
 import "@/styles/theme.css";
 import QueryProvider from "@/context/QueryProvider";
+import { Toaster } from "@/components/ui/sonner";
+import { TooltipProvider } from "@/components/ui/tooltip";
 
 const inter = Inter({
   variable: "--font-inter",
@@ -14,8 +16,8 @@ const outfit = Outfit({
 });
 
 export const metadata: Metadata = {
-  title: "Multimediary | Cinematic Media Library",
-  description: "Browse and manage your physical media collection with style.",
+  title: "Multimediary",
+  description: "Physical media library management system.",
 };
 
 export default function RootLayout({
@@ -25,11 +27,12 @@ export default function RootLayout({
 }>) {
   return (
     <html lang="en" className={`${inter.variable} ${outfit.variable} h-full antialiased`}>
-      <body className="min-h-full flex flex-col bg-bg-deep text-text-vibrant selection:bg-brand-primary/30 selection:text-white">
+      <body suppressHydrationWarning className="min-h-full flex flex-col font-sans selection:bg-brand-primary/30 selection:text-white">
         <QueryProvider>
-          <div className="flex-1 flex flex-col relative overflow-hidden">
+          <TooltipProvider>
             {children}
-          </div>
+            <Toaster richColors closeButton position="top-right" />
+          </TooltipProvider>
         </QueryProvider>
       </body>
     </html>

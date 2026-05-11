@@ -64,7 +64,7 @@ Copy `.env.example` to `.env`. All config is env-var driven:
 ApplicationController          (last-resort StandardError rescue → 500)
 └── Api::V1::Admin::BaseController   (JWT auth, CanCanCan, pagination, rescue handlers)
     └── all admin resource controllers
-└── Api::V1::Public::BaseController  (RecordNotFound rescue only)
+└── Api::V1::Public::BaseController  (RecordNotFound + ParameterMissing rescue, pagination, apply_sort)
     └── public controllers
 ```
 
@@ -95,7 +95,21 @@ All routes under `/api/v1`:
 | Method | Path | Action |
 |---|---|---|
 | POST | `/auth/session` | placeholder anonymous token |
-| GET | `/movies`, `/movies/:id` | read-only, Ransack search, Kaminari pagination |
+| GET | `/movies` | paginated list; Ransack `?q[name_cont]=`, `?q[category_id_eq]=`, `?q[genres_id_eq]=`, `?sort=name&direction=asc` |
+| GET | `/movies/:id` | full detail with cast, ratings, average_rating |
+| GET | `/movies/recent?count=N` | N most-recently-added movies with a poster (max 48) |
+| GET | `/movies/random?count=N` | N random movies with a poster (max 24) |
+| GET | `/categories`, `/categories/:id` | list with movie counts; show with paginated movies |
+| GET | `/genres`, `/genres/:id` | list with movie counts; show with paginated movies |
+| GET | `/actors`, `/actors/:id` | list (only actors in ≥1 movie); `?q[first_name_or_last_name_cont]=`; show with movies |
+| GET | `/directors`, `/directors/:id` | list (only directors with ≥1 movie); show with movies |
+| GET | `/disks`, `/disks/:id` | disks with ≥1 movie; show lists all movies on a disk |
+| GET | `/search?q=term&limit=N` | cross-resource: movies + actors + directors; 400 if q missing or < 2 chars |
+| GET | `/stats` | totals (movies, disks, actors, directors, storage_gb, year_range), by_category, by_format, top_genres |
+
+**Public serializers** live in `app/serializers/public/` (namespaced `Public::*`). Reference them as `::Public::*` from inside controllers to avoid Rails resolving `Api::V1::Public::*`.
+
+**Movie ransackable_attributes** now includes `category_id`, `director_id`, `disk_id` in addition to the text fields, enabling `?q[category_id_eq]=` filtering.
 
 **Health check** (no auth): `GET /up` — pings the DB (`SELECT 1`) and returns `{ status, database, timestamp }` or `503` if unreachable.
 

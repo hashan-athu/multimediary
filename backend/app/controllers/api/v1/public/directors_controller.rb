@@ -4,7 +4,6 @@ module Api
   module V1
     module Public
       class DirectorsController < BaseController
-
         # GET /api/v1/public/directors
         def index
           @directors = Director.select(

@@ -4,7 +4,6 @@ module Api
   module V1
     module Public
       class DisksController < BaseController
-
         # GET /api/v1/public/disks
         def index
           @disks = Disk.select(

@@ -4,7 +4,6 @@ module Api
   module V1
     module Public
       class CategoriesController < BaseController
-
         # GET /api/v1/public/categories
         def index
           @categories = Category.select(

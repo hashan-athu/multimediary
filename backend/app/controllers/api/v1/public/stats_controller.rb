@@ -4,7 +4,6 @@ module Api
   module V1
     module Public
       class StatsController < BaseController
-
         # GET /api/v1/public/stats
         def show
           total_movies    = Movie.count

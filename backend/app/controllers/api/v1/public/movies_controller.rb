@@ -4,7 +4,6 @@ module Api
   module V1
     module Public
       class MoviesController < BaseController
-
         # GET /api/v1/public/movies
         def index
           @movies = Movie.includes(:category, :disk, :genres, :qualities)
@@ -32,7 +31,7 @@ module Api
 
         # GET /api/v1/public/movies/recent
         def recent
-          count = [(params[:count] || 12).to_i, 48].min
+          count = [ (params[:count] || 12).to_i, 48 ].min
           @movies = Movie.includes(:category, :disk, :genres, :qualities)
                          .where.not(poster_url: [ nil, "" ])
                          .order(created_at: :desc)
@@ -45,7 +44,7 @@ module Api
 
         # GET /api/v1/public/movies/random
         def random
-          count = [(params[:count] || 8).to_i, 24].min
+          count = [ (params[:count] || 8).to_i, 24 ].min
           @movies = Movie.includes(:category, :disk, :genres, :qualities)
                          .where.not(poster_url: [ nil, "" ])
                          .order(Arel.sql("RANDOM()"))

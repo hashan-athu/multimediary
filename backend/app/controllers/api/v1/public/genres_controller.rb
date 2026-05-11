@@ -4,7 +4,6 @@ module Api
   module V1
     module Public
       class GenresController < BaseController
-
         # GET /api/v1/public/genres
         def index
           @genres = Genre.select(

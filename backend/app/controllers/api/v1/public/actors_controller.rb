@@ -4,7 +4,6 @@ module Api
   module V1
     module Public
       class ActorsController < BaseController
-
         # GET /api/v1/public/actors
         def index
           @actors = Actor.select(

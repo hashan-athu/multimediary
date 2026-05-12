@@ -3,7 +3,7 @@
 import { useForm } from "react-hook-form";
 import { zodResolver } from "@hookform/resolvers/zod";
 import { z } from "zod";
-import { useEffect } from "react";
+import { useEffect, useMemo, useState } from "react";
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import { useRouter } from "next/navigation";
 import { toast } from "sonner";
@@ -14,7 +14,7 @@ import { CastSelector } from "@/components/movies/CastSelector";
 import { TMDbEnrichmentPanel } from "@/components/movies/TMDbEnrichmentPanel";
 import { FormField } from "@/components/movies/FormField";
 import { DirectorSelector } from "@/components/movies/DirectorSelector";
-import type { MovieDetail, Category, Genre, Quality, Disk } from "@/types";
+import type { MovieDetail, Category, Genre, Quality, Disk, Actor, Director } from "@/types";
 
 // ── Schema ────────────────────────────────────────────────────────────────────
 
@@ -86,6 +86,9 @@ function FormSection({
 export function UnifiedMovieForm({ mode, initialData, onSuccess }: UnifiedMovieFormProps) {
   const router = useRouter();
   const queryClient = useQueryClient();
+  const [enrichedDirector, setEnrichedDirector] = useState<Director | null>(null);
+  const [enrichedActors, setEnrichedActors] = useState<Actor[]>([]);
+  const [tmdbRating, setTmdbRating] = useState<{ rating_value: number; rating_out_of: number } | null>(null);
 
   const form = useForm<MovieFormData>({
     resolver: zodResolver(movieSchema),
@@ -163,6 +166,35 @@ export function UnifiedMovieForm({ mode, initialData, onSuccess }: UnifiedMovieF
   const genres:     Genre[]    = genreData?.genres      ?? [];
   const qualities:  Quality[]  = qualData?.qualities    ?? [];
   const disks:      Disk[]     = diskData?.disks        ?? [];
+  const selectorActors = useMemo(() => {
+    const actorsById = new Map<number, Actor>();
+    (initialData?.actors ?? []).forEach((actor) => actorsById.set(actor.id, actor));
+    enrichedActors.forEach((actor) => actorsById.set(actor.id, actor));
+    return Array.from(actorsById.values());
+  }, [enrichedActors, initialData?.actors]);
+
+  const ensureTmdbRating = async (movieId: number) => {
+    if (!tmdbRating) return;
+
+    const reviewersRes = await apiClient.reviewers.list({ per_page: 200 });
+    const tmdbReviewer =
+      reviewersRes.reviewers.find((reviewer) => reviewer.name.toLowerCase() === "tmdb") ??
+      (await apiClient.reviewers.create({ name: "TMDb", website_url: "https://www.themoviedb.org" }));
+
+    const ratings = await apiClient.ratings.list(movieId);
+    const existingTmdbRating = ratings.find((rating) => rating.reviewer.id === tmdbReviewer.id);
+    const payload = {
+      rating_value: tmdbRating.rating_value,
+      rating_out_of: tmdbRating.rating_out_of,
+      reviewer_id: tmdbReviewer.id,
+    };
+
+    if (existingTmdbRating) {
+      await apiClient.ratings.update(movieId, existingTmdbRating.id, payload);
+    } else {
+      await apiClient.ratings.create(movieId, payload);
+    }
+  };
 
   // ── Save mutation ─────────────────────────────────────────────────────────
 
@@ -194,10 +226,17 @@ export function UnifiedMovieForm({ mode, initialData, onSuccess }: UnifiedMovieF
         return apiClient.movies.update(initialData!.id, payload);
       }
     },
-    onSuccess: (movie) => {
+    onSuccess: async (movie) => {
+      try {
+        await ensureTmdbRating(movie.id);
+      } catch (error) {
+        toast.error(`Movie saved, but TMDb rating was not added: ${extractApiError(error)}`);
+      }
+
       toast.success(mode === "create" ? `"${movie.name}" added to library` : "Movie updated");
       queryClient.invalidateQueries({ queryKey: ["movies"] });
       queryClient.invalidateQueries({ queryKey: ["movies", movie.id] });
+      queryClient.invalidateQueries({ queryKey: ["movies", movie.id, "ratings"] });
       onSuccess?.(movie.id);
       if (mode === "create") {
         router.push(`/admin/movies/${movie.id}`);
@@ -240,12 +279,18 @@ export function UnifiedMovieForm({ mode, initialData, onSuccess }: UnifiedMovieF
       {/* ── TMDb Enrichment ─────────────────────────────────────────────── */}
       <TMDbEnrichmentPanel
         currentTmdbId={tmdbId}
-        onEnrich={(fields) => {
+        onEnrich={(fields, matched) => {
           Object.entries(fields).forEach(([key, value]) => {
             if (value !== undefined && value !== null) {
               form.setValue(key as keyof MovieFormData, value as never, { shouldDirty: true });
             }
           });
+          setEnrichedDirector(matched.director ?? null);
+          setEnrichedActors(matched.actors ?? []);
+          setTmdbRating(matched.tmdbRating ?? null);
+          if (matched.genres?.length) queryClient.invalidateQueries({ queryKey: ["genres"] });
+          if (matched.director) queryClient.invalidateQueries({ queryKey: ["directors"] });
+          if (matched.actors?.length) queryClient.invalidateQueries({ queryKey: ["actors"] });
           toast.success("Fields filled — review and save when ready");
         }}
       />
@@ -436,10 +481,12 @@ export function UnifiedMovieForm({ mode, initialData, onSuccess }: UnifiedMovieF
             value={directorId ?? null}
             onChange={(id) => form.setValue("director_id", id, { shouldDirty: true })}
             initialDirector={initialData?.director ?? null}
+            selectedDirector={enrichedDirector ?? initialData?.director ?? null}
           />
           <CastSelector
             selectedActorIds={actorIds}
             onChange={(ids) => form.setValue("actor_ids", ids, { shouldDirty: true })}
+            selectedActors={selectorActors}
           />
         </div>
       </FormSection>

@@ -1,6 +1,6 @@
 "use client";
 
-import { useState, useCallback } from "react";
+import { useState, useCallback, useMemo } from "react";
 import { useQuery } from "@tanstack/react-query";
 import { apiClient } from "@/lib/adminApi";
 import { X, Search } from "lucide-react";
@@ -10,14 +10,22 @@ import type { Actor } from "@/types";
 interface CastSelectorProps {
   selectedActorIds: number[];
   onChange: (ids: number[]) => void;
+  selectedActors?: Actor[];
 }
 
-export function CastSelector({ selectedActorIds, onChange }: CastSelectorProps) {
+export function CastSelector({ selectedActorIds, onChange, selectedActors = [] }: CastSelectorProps) {
   const [query, setQuery] = useState("");
   const [open, setOpen] = useState(false);
   // Local cache: id → name, built as actors are selected
   const [actorCache, setActorCache] = useState<Record<number, string>>({});
   const debouncedQuery = useDebounce(query, 300);
+  const actorNames = useMemo<Record<number, string>>(
+    () => ({
+      ...Object.fromEntries(selectedActors.map((actor) => [actor.id, actor.full_name])),
+      ...actorCache,
+    }),
+    [actorCache, selectedActors]
+  );
 
   const { data: searchData } = useQuery({
     queryKey: ["actors-search", debouncedQuery],
@@ -63,7 +71,7 @@ export function CastSelector({ selectedActorIds, onChange }: CastSelectorProps) 
               key={id}
               className="flex items-center gap-1.5 pl-2 pr-1 py-1 rounded-full bg-[#EEF4FF] text-[#4299EB] text-xs font-medium"
             >
-              {actorCache[id] ?? `Actor #${id}`}
+              {actorNames[id] ?? `Actor #${id}`}
               <button
                 type="button"
                 onClick={() => removeActor(id)}

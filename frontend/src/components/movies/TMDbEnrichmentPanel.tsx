@@ -3,10 +3,10 @@
 import { useState } from "react";
 import { Wand2, ChevronDown, ChevronUp, Check, Search } from "lucide-react";
 import { useQuery } from "@tanstack/react-query";
-import { api, extractApiError } from "@/lib/adminApi";
+import { api, apiClient, extractApiError } from "@/lib/adminApi";
 import { useDebounce } from "@/hooks/useDebounce";
 import { toast } from "sonner";
-import type { TMDbSearchResult } from "@/types";
+import type { Actor, Director, Genre, TMDbSearchResult } from "@/types";
 
 const ENRICHABLE_FIELDS = [
   { key: "name",        label: "Title" },
@@ -28,8 +28,34 @@ type EnrichableKey = typeof ENRICHABLE_FIELDS[number]["key"];
 
 interface TMDbEnrichmentPanelProps {
   currentTmdbId?: number | null;
-  onEnrich: (fields: Partial<Record<string, unknown>>) => void;
+  onEnrich: (
+    fields: Partial<Record<string, unknown>>,
+    matched: {
+      director?: Director | null;
+      actors?: Actor[];
+      genres?: Genre[];
+      tmdbRating?: { rating_value: number; rating_out_of: number } | null;
+    }
+  ) => void;
 }
+
+interface TMDbPerson {
+  first_name?: string | null;
+  last_name?: string | null;
+  image_url?: string | null;
+}
+
+const normalized = (value?: string | null) => value?.trim().toLowerCase() ?? "";
+
+const personMatches = (person: Pick<Actor | Director, "first_name" | "last_name">, tmdbPerson: TMDbPerson) =>
+  normalized(person.first_name) === normalized(tmdbPerson.first_name) &&
+  normalized(person.last_name) === normalized(tmdbPerson.last_name);
+
+const personPayload = (person: TMDbPerson) => ({
+  first_name: person.first_name?.trim() || "Unknown",
+  last_name: person.last_name?.trim() || "Unknown",
+  image_url: person.image_url || undefined,
+});
 
 export function TMDbEnrichmentPanel({ currentTmdbId, onEnrich }: TMDbEnrichmentPanelProps) {
   const [open, setOpen] = useState(false);
@@ -58,6 +84,30 @@ export function TMDbEnrichmentPanel({ currentTmdbId, onEnrich }: TMDbEnrichmentP
     setQuery("");
   };
 
+  const findOrCreateGenre = async (name: string): Promise<Genre> => {
+    const genresRes = await apiClient.genres.list({ per_page: 200 });
+    const existing = genresRes.genres.find((g) => normalized(g.name) === normalized(name));
+    return existing ?? apiClient.genres.create({ name });
+  };
+
+  const findOrCreateDirector = async (director: TMDbPerson): Promise<Director> => {
+    const directorsRes = await apiClient.directors.list({
+      "q[first_name_or_last_name_cont]": director.last_name || director.first_name || undefined,
+      per_page: 10,
+    });
+    const existing = directorsRes.directors.find((d) => personMatches(d, director));
+    return existing ?? apiClient.directors.create(personPayload(director));
+  };
+
+  const findOrCreateActor = async (actor: TMDbPerson): Promise<Actor> => {
+    const actorsRes = await apiClient.actors.list({
+      "q[first_name_or_last_name_cont]": actor.last_name || actor.first_name || undefined,
+      per_page: 10,
+    });
+    const existing = actorsRes.actors.find((a) => personMatches(a, actor));
+    return existing ?? apiClient.actors.create(personPayload(actor));
+  };
+
   const handleApply = async () => {
     if (!selectedResult) return;
     setApplying(true);
@@ -65,42 +115,18 @@ export function TMDbEnrichmentPanel({ currentTmdbId, onEnrich }: TMDbEnrichmentP
       const previewRes = await api.post("/admin/movies/tmdb_preview", { tmdb_id: selectedResult.id });
       const data = previewRes.data;
 
-      const genresRes = await api.get("/admin/genres");
-      const allGenres: { id: number; name: string }[] = genresRes.data.genres ?? [];
-
       const tmdbGenreNames: string[] = data.genres ?? [];
-      const matchedGenreIds = allGenres
-        .filter((g) => tmdbGenreNames.some((n) => n.toLowerCase() === g.name.toLowerCase()))
-        .map((g) => g.id);
-      const unmatchedGenres = tmdbGenreNames.filter(
-        (n) => !allGenres.some((g) => g.name.toLowerCase() === n.toLowerCase())
-      );
+      const matchedGenres = checkedFields.has("genre_ids")
+        ? await Promise.all(tmdbGenreNames.map((name) => findOrCreateGenre(name)))
+        : [];
 
-      let directorId: number | null = null;
-      if (data.director) {
-        const dirRes = await api.get("/admin/directors", {
-          params: { "q[last_name_cont]": data.director.last_name, per_page: 5 },
-        });
-        const dirs: { id: number; first_name: string; last_name: string }[] = dirRes.data.directors ?? [];
-        const matched = dirs.find(
-          (d) => d.last_name?.toLowerCase() === data.director.last_name?.toLowerCase()
-        );
-        directorId = matched?.id ?? null;
-      }
+      const matchedDirector = checkedFields.has("director_id") && data.director
+        ? await findOrCreateDirector(data.director)
+        : null;
 
-      let actorIds: number[] = [];
-      if (data.actors?.length > 0) {
-        const actorSearches = await Promise.all(
-          data.actors.slice(0, 10).map(async (a: { first_name: string; last_name: string }) => {
-            const actRes = await api.get("/admin/actors", {
-              params: { "q[first_name_or_last_name_cont]": a.last_name, per_page: 3 },
-            });
-            const actors: { id: number; first_name: string; last_name: string }[] = actRes.data.actors ?? [];
-            return actors.find((ac) => ac.last_name?.toLowerCase() === a.last_name?.toLowerCase());
-          })
-        );
-        actorIds = actorSearches.filter(Boolean).map((a) => a!.id);
-      }
+      const matchedActors = checkedFields.has("actor_ids") && data.actors?.length > 0
+        ? await Promise.all(data.actors.slice(0, 10).map((actor: TMDbPerson) => findOrCreateActor(actor)))
+        : [];
 
       const toApply: Partial<Record<string, unknown>> = {};
       if (checkedFields.has("name"))        toApply.name        = data.name;
@@ -113,26 +139,22 @@ export function TMDbEnrichmentPanel({ currentTmdbId, onEnrich }: TMDbEnrichmentP
       if (checkedFields.has("country"))     toApply.country     = data.country;
       if (checkedFields.has("poster_url"))  toApply.poster_url  = data.poster_url;
       if (checkedFields.has("tmdb_id"))     toApply.tmdb_id     = data.tmdb_id ? Number(data.tmdb_id) : null;
-      if (checkedFields.has("genre_ids") && matchedGenreIds.length > 0)
-                                            toApply.genre_ids   = matchedGenreIds;
-      if (checkedFields.has("director_id") && directorId)
-                                            toApply.director_id = directorId;
-      if (checkedFields.has("actor_ids") && actorIds.length > 0)
-                                            toApply.actor_ids   = actorIds;
+      if (checkedFields.has("genre_ids"))   toApply.genre_ids   = matchedGenres.map((g) => g.id);
+      if (checkedFields.has("director_id") && matchedDirector)
+                                            toApply.director_id = matchedDirector.id;
+      if (checkedFields.has("actor_ids"))   toApply.actor_ids   = matchedActors.map((a) => a.id);
 
-      onEnrich(toApply);
+      onEnrich(toApply, {
+        director: matchedDirector,
+        actors: matchedActors,
+        genres: matchedGenres,
+        tmdbRating: data.vote_average?.toString() && Number(data.vote_average) > 0
+          ? { rating_value: Math.round(Number(data.vote_average) * 10) / 10, rating_out_of: 10 }
+          : null,
+      });
 
-      if (unmatchedGenres.length > 0) {
-        toast.warning(
-          `Genres not in your library: ${unmatchedGenres.join(", ")} — add them in Library → Genres first`,
-          { duration: 6000 }
-        );
-      }
-      if (checkedFields.has("director_id") && !directorId && data.director) {
-        toast.warning(
-          `Director "${data.director.first_name} ${data.director.last_name}" not found — add them in People → Directors first`,
-          { duration: 6000 }
-        );
+      if (matchedGenres.length > 0 || matchedDirector || matchedActors.length > 0) {
+        toast.success("TMDb people and genres are ready in your library");
       }
 
       setOpen(false);
@@ -148,7 +170,11 @@ export function TMDbEnrichmentPanel({ currentTmdbId, onEnrich }: TMDbEnrichmentP
   const toggleField = (key: EnrichableKey) => {
     setCheckedFields((prev) => {
       const next = new Set(prev);
-      next.has(key) ? next.delete(key) : next.add(key);
+      if (next.has(key)) {
+        next.delete(key);
+      } else {
+        next.add(key);
+      }
       return next;
     });
   };

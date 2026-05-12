@@ -11,9 +11,10 @@ interface DirectorSelectorProps {
   value: number | null;
   onChange: (id: number | null) => void;
   initialDirector?: Director | null;
+  selectedDirector?: Director | null;
 }
 
-export function DirectorSelector({ value, onChange, initialDirector }: DirectorSelectorProps) {
+export function DirectorSelector({ value, onChange, initialDirector, selectedDirector }: DirectorSelectorProps) {
   const [query, setQuery] = useState("");
   const [open, setOpen] = useState(false);
   const [dirCache, setDirCache] = useState<Record<number, string>>(() => {
@@ -33,7 +34,10 @@ export function DirectorSelector({ value, onChange, initialDirector }: DirectorS
   });
 
   const directors: Director[] = data?.directors ?? [];
-  const selectedName = value ? dirCache[value] : null;
+  const externalDirector = selectedDirector ?? initialDirector;
+  const selectedName = value
+    ? dirCache[value] ?? (externalDirector?.id === value ? externalDirector.full_name : null)
+    : null;
 
   const select = useCallback(
     (dir: Director) => {

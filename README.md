@@ -39,11 +39,11 @@ npm start                # http://localhost:3000/docs/
 - **Dashboard** — summary stats (movie count, total storage, disk count, actor count) and 8 most recent movies
 - **Rate limiting** — Rack::Attack: 5 login attempts/min, 300 API requests/min per IP
 - **Health check** — `GET /up` pings the database and returns `200` or `503`
-- **Deployment** — Kamal + Docker with zero-downtime rolling deploys
+- **Deployment** — GitHub Actions builds a Docker image and deploys it to an Oracle VM with Docker Compose
 
 ## What's planned
 
-- Next.js admin frontend (not yet started)
+- Next.js frontend
 - Proper public session tokens (current endpoint returns a static placeholder)
 - `file_size` column migration from `string` to `decimal`
 
@@ -51,4 +51,4 @@ npm start                # http://localhost:3000/docs/
 
 The `docs/` site covers architecture, authentication, authorization, data model, search/pagination, TMDb integration, deployment, and a full interactive API reference generated from `docs/api/openapi.yaml`.
 
-See [`backend/README.md`](backend/README.md) for backend-specific setup and [`docs/README.md`](docs/README.md) for the documentation site.
+See [`backend/README.md`](backend/README.md) for backend-specific setup, [`deploy/README.md`](deploy/README.md) for backend deployment, and [`docs/README.md`](docs/README.md) for the documentation site.

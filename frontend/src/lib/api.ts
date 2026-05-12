@@ -1,10 +1,10 @@
 import axios from "axios";
 import { MovieResponse, MovieParams, MovieDetail, Category, Genre, Actor, Director } from "@/types";
 
-const API_URL = process.env.NEXT_PUBLIC_API_URL || "http://localhost:3001/api/v1/public";
+const BASE_URL = process.env.NEXT_PUBLIC_API_URL || "http://localhost:3001";
 
 const api = axios.create({
-  baseURL: API_URL,
+  baseURL: `${BASE_URL}/api/v1/public`,
   headers: { "Content-Type": "application/json" },
 });
 

@@ -94,18 +94,6 @@ Default role for new users: `editor`.
 
 ## Deployment
 
-Deployed with Kamal + Docker. Config lives in `config/deploy.yml`.
+The active backend deployment path is GitHub Actions + Docker Compose on the Oracle VM. The workflow builds `backend/Dockerfile`, pushes the image to GHCR, SSHes into the VM, and restarts the compose stack in `/opt/multimediary`.
 
-```bash
-bin/kamal setup    # first deploy — provisions server and starts containers
-bin/kamal deploy   # subsequent deploys (zero-downtime rolling update)
-```
-
-Production requires these additional env vars on the server:
-
-```
-BACKEND_QUEUE_DATABASE_NAME=multimediary_queue
-BACKEND_CACHE_DATABASE_NAME=multimediary_cache
-BACKEND_CABLE_DATABASE_NAME=multimediary_cable
-CORS_ALLOWED_ORIGINS=https://admin.yourdomain.com
-```
+See [`../deploy/README.md`](../deploy/README.md) for VM bootstrap, GitHub secrets, and operational commands.

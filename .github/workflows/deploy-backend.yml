@@ -1,6 +1,7 @@
 name: Deploy Backend → Oracle VM
 
 on:
+  workflow_dispatch:
   push:
     branches: [dev]
     paths:
@@ -71,10 +72,76 @@ jobs:
     runs-on: ubuntu-latest
     needs: build-and-push
     environment: dev   # maps to the "dev" GitHub Environment (set protection rules there)
+    permissions:
+      contents: read
+      packages: read
 
     steps:
       - name: Checkout repository
         uses: actions/checkout@v4
+
+      - name: Validate required deployment secrets
+        env:
+          ORACLE_VM_HOST: ${{ secrets.ORACLE_VM_HOST }}
+          ORACLE_VM_USER: ${{ secrets.ORACLE_VM_USER }}
+          ORACLE_VM_SSH_KEY: ${{ secrets.ORACLE_VM_SSH_KEY }}
+          RAILS_MASTER_KEY: ${{ secrets.RAILS_MASTER_KEY }}
+          POSTGRES_USER: ${{ secrets.POSTGRES_USER }}
+          POSTGRES_PASSWORD: ${{ secrets.POSTGRES_PASSWORD }}
+          POSTGRES_DB: ${{ secrets.POSTGRES_DB }}
+          POSTGRES_CACHE_DB: ${{ secrets.POSTGRES_CACHE_DB }}
+          POSTGRES_QUEUE_DB: ${{ secrets.POSTGRES_QUEUE_DB }}
+          POSTGRES_CABLE_DB: ${{ secrets.POSTGRES_CABLE_DB }}
+          TMDB_API_KEY: ${{ secrets.TMDB_API_KEY }}
+          CORS_ALLOWED_ORIGINS: ${{ secrets.CORS_ALLOWED_ORIGINS }}
+        run: |
+          set -euo pipefail
+
+          missing=0
+          required_secrets=(
+            ORACLE_VM_HOST
+            ORACLE_VM_USER
+            ORACLE_VM_SSH_KEY
+            RAILS_MASTER_KEY
+            POSTGRES_USER
+            POSTGRES_PASSWORD
+            POSTGRES_DB
+            POSTGRES_CACHE_DB
+            POSTGRES_QUEUE_DB
+            POSTGRES_CABLE_DB
+            TMDB_API_KEY
+            CORS_ALLOWED_ORIGINS
+          )
+
+          for name in "${required_secrets[@]}"; do
+            if [ -z "${!name:-}" ]; then
+              echo "::error title=Missing GitHub secret::${name} is not configured for the dev environment or repository."
+              missing=1
+            fi
+          done
+
+          if [ -n "${ORACLE_VM_SSH_KEY:-}" ] && ! printf '%s' "${ORACLE_VM_SSH_KEY}" | grep -q "BEGIN .*PRIVATE KEY"; then
+            echo "::error title=Invalid SSH key secret::ORACLE_VM_SSH_KEY must contain the full private key, including BEGIN/END lines."
+            missing=1
+          fi
+
+          if [ "${missing}" -ne 0 ]; then
+            exit 1
+          fi
+
+      - name: Prepare server directory and verify Docker
+        uses: appleboy/ssh-action@v1.0.3
+        with:
+          host: ${{ secrets.ORACLE_VM_HOST }}
+          username: ${{ secrets.ORACLE_VM_USER }}
+          key: ${{ secrets.ORACLE_VM_SSH_KEY }}
+          script: |
+            set -euo pipefail
+
+            sudo install -d -m 755 -o "$(id -un)" -g "$(id -gn)" /opt/multimediary
+
+            docker --version
+            docker compose version
 
       # Copy the production compose file to the server.
       # If the file hasn't changed this is a no-op but keeps the server in sync.
@@ -95,11 +162,19 @@ jobs:
           GH_ACTOR: ${{ github.actor }}
           RAILS_MASTER_KEY: ${{ secrets.RAILS_MASTER_KEY }}
           BACKEND_IMAGE: ${{ env.REGISTRY }}/${{ env.IMAGE_NAME }}:dev
+          POSTGRES_USER: ${{ secrets.POSTGRES_USER }}
+          POSTGRES_PASSWORD: ${{ secrets.POSTGRES_PASSWORD }}
+          POSTGRES_DB: ${{ secrets.POSTGRES_DB }}
+          POSTGRES_CACHE_DB: ${{ secrets.POSTGRES_CACHE_DB }}
+          POSTGRES_QUEUE_DB: ${{ secrets.POSTGRES_QUEUE_DB }}
+          POSTGRES_CABLE_DB: ${{ secrets.POSTGRES_CABLE_DB }}
+          TMDB_API_KEY: ${{ secrets.TMDB_API_KEY }}
+          CORS_ALLOWED_ORIGINS: ${{ secrets.CORS_ALLOWED_ORIGINS }}
         with:
           host: ${{ secrets.ORACLE_VM_HOST }}
           username: ${{ secrets.ORACLE_VM_USER }}
           key: ${{ secrets.ORACLE_VM_SSH_KEY }}
-          envs: GH_TOKEN,GH_ACTOR,RAILS_MASTER_KEY,BACKEND_IMAGE
+          envs: GH_TOKEN,GH_ACTOR,RAILS_MASTER_KEY,BACKEND_IMAGE,POSTGRES_USER,POSTGRES_PASSWORD,POSTGRES_DB,POSTGRES_CACHE_DB,POSTGRES_QUEUE_DB,POSTGRES_CABLE_DB,TMDB_API_KEY,CORS_ALLOWED_ORIGINS
           script: |
             set -euo pipefail
             echo "▶ Logging in to GHCR..."
@@ -108,22 +183,31 @@ jobs:
             echo "▶ Pulling latest image: ${BACKEND_IMAGE}"
             docker pull "${BACKEND_IMAGE}"
 
-            echo "▶ Updating RAILS_MASTER_KEY in .env.production..."
             cd /opt/multimediary
-            if grep -q "^RAILS_MASTER_KEY=" .env.production 2>/dev/null; then
-              sed -i "s|^RAILS_MASTER_KEY=.*|RAILS_MASTER_KEY=${RAILS_MASTER_KEY}|" .env.production
-            else
-              echo "RAILS_MASTER_KEY=${RAILS_MASTER_KEY}" >> .env.production
-            fi
+
+            echo "▶ Writing .env.production from GitHub Secrets..."
+            umask 077
+            {
+              printf '%s\n' "RAILS_MASTER_KEY=${RAILS_MASTER_KEY}"
+              printf '%s\n' "POSTGRES_USER=${POSTGRES_USER}"
+              printf '%s\n' "POSTGRES_PASSWORD=${POSTGRES_PASSWORD}"
+              printf '%s\n' "POSTGRES_DB=${POSTGRES_DB}"
+              printf '%s\n' "POSTGRES_CACHE_DB=${POSTGRES_CACHE_DB}"
+              printf '%s\n' "POSTGRES_QUEUE_DB=${POSTGRES_QUEUE_DB}"
+              printf '%s\n' "POSTGRES_CABLE_DB=${POSTGRES_CABLE_DB}"
+              printf '%s\n' "TMDB_API_KEY=${TMDB_API_KEY}"
+              printf '%s\n' "CORS_ALLOWED_ORIGINS=${CORS_ALLOWED_ORIGINS}"
+            } > .env.production
 
             echo "▶ Starting/restarting containers..."
             # BACKEND_IMAGE is consumed by docker-compose.prod.yml via ${BACKEND_IMAGE}
             export BACKEND_IMAGE="${BACKEND_IMAGE}"
-            docker compose -f docker-compose.prod.yml up -d --remove-orphans
+            docker compose --env-file .env.production -f docker-compose.prod.yml config --quiet
+            docker compose --env-file .env.production -f docker-compose.prod.yml up -d --remove-orphans
 
             echo "▶ Waiting for backend to be healthy..."
             sleep 10
-            docker compose -f docker-compose.prod.yml ps
+            docker compose --env-file .env.production -f docker-compose.prod.yml ps
 
             echo "▶ Pruning unused images..."
             docker image prune -f

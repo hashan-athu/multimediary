@@ -3,8 +3,9 @@
 # This file is deployed to /opt/multimediary/docker-compose.prod.yml on the
 # Oracle VM by the GitHub Actions deploy workflow.
 #
-# Before first run, copy .env.production.example → .env.production and fill
-# in all values. Then run: docker compose -f docker-compose.prod.yml up -d
+# The deploy workflow generates .env.production from GitHub Environment secrets.
+# To run manually on the VM:
+# docker compose --env-file .env.production -f docker-compose.prod.yml up -d
 # ─────────────────────────────────────────────────────────────────────────────
 
 services:

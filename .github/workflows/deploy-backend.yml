@@ -213,6 +213,23 @@ jobs:
             # BACKEND_IMAGE is consumed by docker-compose.prod.yml via ${BACKEND_IMAGE}
             export BACKEND_IMAGE="${BACKEND_IMAGE}"
             docker compose --env-file .env.production -f docker-compose.prod.yml config --quiet
+
+            echo "▶ Checking host port 80..."
+            current_backend_ids="$(docker compose --env-file .env.production -f docker-compose.prod.yml ps -q backend || true)"
+            conflicting_container_ids=""
+            for container_id in $(docker ps --filter publish=80 -q); do
+              if ! printf '%s\n' "${current_backend_ids}" | grep -q "^${container_id}$"; then
+                conflicting_container_ids="${conflicting_container_ids} ${container_id}"
+              fi
+            done
+
+            if [ -n "${conflicting_container_ids}" ]; then
+              echo "::error title=Port 80 is already allocated::Another container is publishing port 80. Stop it or change the backend host port, then rerun the deploy."
+              docker ps --format 'table {{.ID}}\t{{.Names}}\t{{.Ports}}'
+              sudo ss -ltnp 'sport = :80' || true
+              exit 1
+            fi
+
             docker compose --env-file .env.production -f docker-compose.prod.yml up -d --remove-orphans
 
             echo "▶ Waiting for backend to be healthy..."

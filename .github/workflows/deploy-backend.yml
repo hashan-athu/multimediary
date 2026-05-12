@@ -214,13 +214,14 @@ jobs:
             export BACKEND_IMAGE="${BACKEND_IMAGE}"
             docker compose --env-file .env.production -f docker-compose.prod.yml config --quiet
 
+            echo "▶ Removing existing backend container to free port 80..."
+            docker compose --env-file .env.production -f docker-compose.prod.yml stop backend || true
+            docker compose --env-file .env.production -f docker-compose.prod.yml rm -f backend || true
+
             echo "▶ Checking host port 80..."
-            current_backend_ids="$(docker compose --env-file .env.production -f docker-compose.prod.yml ps -q backend || true)"
             conflicting_container_ids=""
             for container_id in $(docker ps --filter publish=80 -q); do
-              if ! printf '%s\n' "${current_backend_ids}" | grep -q "^${container_id}$"; then
-                conflicting_container_ids="${conflicting_container_ids} ${container_id}"
-              fi
+              conflicting_container_ids="${conflicting_container_ids} ${container_id}"
             done
 
             if [ -n "${conflicting_container_ids}" ]; then

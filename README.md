@@ -43,7 +43,7 @@ npm start                # http://localhost:3000/docs/
 
 ## What's planned
 
-- Next.js admin frontend (not yet started)
+- Next.js frontend
 - Proper public session tokens (current endpoint returns a static placeholder)
 - `file_size` column migration from `string` to `decimal`
 

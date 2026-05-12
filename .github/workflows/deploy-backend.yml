@@ -175,8 +175,18 @@ jobs:
           username: ${{ secrets.ORACLE_VM_USER }}
           key: ${{ secrets.ORACLE_VM_SSH_KEY }}
           envs: GH_TOKEN,GH_ACTOR,RAILS_MASTER_KEY,BACKEND_IMAGE,POSTGRES_USER,POSTGRES_PASSWORD,POSTGRES_DB,POSTGRES_CACHE_DB,POSTGRES_QUEUE_DB,POSTGRES_CABLE_DB,TMDB_API_KEY,CORS_ALLOWED_ORIGINS
+          command_timeout: 30m
           script: |
             set -euo pipefail
+            show_diagnostics() {
+              echo "▶ Deployment diagnostics..."
+              cd /opt/multimediary || return 0
+              docker compose --env-file .env.production -f docker-compose.prod.yml ps || true
+              docker compose --env-file .env.production -f docker-compose.prod.yml logs --tail=200 backend || true
+              docker compose --env-file .env.production -f docker-compose.prod.yml logs --tail=100 db || true
+            }
+            trap show_diagnostics ERR
+
             echo "▶ Logging in to GHCR..."
             echo "${GH_TOKEN}" | docker login ghcr.io -u "${GH_ACTOR}" --password-stdin
 

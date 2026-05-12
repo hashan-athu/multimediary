@@ -6,7 +6,8 @@ import Header from "@/components/Header";
 import Footer from "@/components/Footer";
 import Link from "next/link";
 import { motion } from "framer-motion";
-import { Film, Layers } from "lucide-react";
+import { Film } from "lucide-react";
+import { CategoryGridSkeleton, PublicEmptyState, emptyIcons } from "@/components/PublicStates";
 
 export default function CategoriesPage() {
   const { data, isLoading } = useQuery({
@@ -30,14 +31,13 @@ export default function CategoriesPage() {
         </div>
 
         {isLoading ? (
-          <div className="flex items-center justify-center py-32">
-            <div className="w-12 h-12 border-4 border-brand-primary border-t-transparent rounded-full animate-spin" />
-          </div>
+          <CategoryGridSkeleton />
         ) : categories.length === 0 ? (
-          <div className="flex flex-col items-center justify-center py-32 gap-6">
-            <Layers size={64} className="text-text-muted" />
-            <p className="text-text-dim text-xl">No categories found.</p>
-          </div>
+          <PublicEmptyState
+            icon={emptyIcons.layers}
+            title="No categories yet"
+            description="There is no live category data to browse. Add categories in admin and this page will fill in automatically."
+          />
         ) : (
           <motion.div
             initial={{ opacity: 0 }}

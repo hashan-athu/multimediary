@@ -9,8 +9,9 @@ import Footer from "@/components/Footer";
 import SearchFilter from "@/components/SearchFilter";
 import MovieCard from "@/components/MovieCard";
 import { motion } from "framer-motion";
-import { ChevronLeft, ChevronRight, Film } from "lucide-react";
+import { ChevronLeft, ChevronRight } from "lucide-react";
 import { Suspense } from "react";
+import { MovieGridSkeleton, PublicEmptyState, emptyIcons } from "@/components/PublicStates";
 
 function MoviesContent() {
   const router = useRouter();
@@ -90,18 +91,13 @@ function MoviesContent() {
 
       <div className="max-w-7xl mx-auto px-6 md:px-12 pb-20">
         {isLoading ? (
-          <div className="flex items-center justify-center py-32">
-            <div className="flex flex-col items-center gap-4">
-              <div className="w-12 h-12 border-4 border-brand-primary border-t-transparent rounded-full animate-spin" />
-              <p className="text-text-dim font-bold tracking-widest animate-pulse">LOADING...</p>
-            </div>
-          </div>
+          <MovieGridSkeleton />
         ) : movies.length === 0 ? (
-          <div className="flex flex-col items-center justify-center py-32 gap-6">
-            <Film size={64} className="text-text-muted" />
-            <h2 className="text-2xl font-bold text-white">No movies found</h2>
-            <p className="text-text-dim">Try adjusting your filters or search query.</p>
-          </div>
+          <PublicEmptyState
+            icon={emptyIcons.search}
+            title="No movies found"
+            description="No live movie data matches the current filters. Try adjusting your search, or add movies from the admin area."
+          />
         ) : (
           <motion.div
             initial={{ opacity: 0 }}
@@ -178,8 +174,8 @@ export default function MoviesPage() {
     <main className="min-h-screen bg-bg-deep flex flex-col">
       <Header />
       <Suspense fallback={
-        <div className="flex-1 flex items-center justify-center">
-          <div className="w-12 h-12 border-4 border-brand-primary border-t-transparent rounded-full animate-spin" />
+        <div className="pt-32 pb-24 px-6 md:px-12 max-w-7xl mx-auto w-full">
+          <MovieGridSkeleton />
         </div>
       }>
         <MoviesContent />

@@ -5,16 +5,23 @@ import MovieCard from "./MovieCard";
 import { motion } from "framer-motion";
 import { ChevronRight } from "lucide-react";
 import Link from "next/link";
+import { PublicEmptyState, emptyIcons } from "@/components/PublicStates";
 
 interface MovieSectionProps {
   title: string;
   movies: Movie[];
   viewAllHref?: string;
+  emptyTitle?: string;
+  emptyDescription?: string;
 }
 
-export default function MovieSection({ title, movies, viewAllHref }: MovieSectionProps) {
-  if (!movies.length) return null;
-
+export default function MovieSection({
+  title,
+  movies,
+  viewAllHref,
+  emptyTitle = "No movies available",
+  emptyDescription = "There is no live movie data for this section yet. Add movies in the admin area to fill this space.",
+}: MovieSectionProps) {
   const container = {
     hidden: { opacity: 0 },
     show: {
@@ -51,6 +58,20 @@ export default function MovieSection({ title, movies, viewAllHref }: MovieSectio
         )}
       </div>
 
+      {!movies.length && (
+        <PublicEmptyState
+          icon={emptyIcons.films}
+          title={emptyTitle}
+          description={emptyDescription}
+          action={viewAllHref ? (
+            <Link href={viewAllHref} className="btn-secondary px-8 py-3">
+              Browse Movies
+            </Link>
+          ) : undefined}
+        />
+      )}
+
+      {movies.length > 0 && (
       <motion.div 
         variants={container}
         initial="hidden"
@@ -64,6 +85,7 @@ export default function MovieSection({ title, movies, viewAllHref }: MovieSectio
           </motion.div>
         ))}
       </motion.div>
+      )}
     </div>
   );
 }

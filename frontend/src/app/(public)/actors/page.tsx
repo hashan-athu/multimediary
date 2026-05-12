@@ -7,9 +7,10 @@ import Header from "@/components/Header";
 import Footer from "@/components/Footer";
 import Link from "next/link";
 import { motion } from "framer-motion";
-import { ChevronLeft, ChevronRight, Search, User, Users } from "lucide-react";
+import { ChevronLeft, ChevronRight, Search, User } from "lucide-react";
 import { Suspense, useState } from "react";
 import { useDebounce } from "@/hooks/useDebounce";
+import { PeopleGridSkeleton, PublicEmptyState, emptyIcons } from "@/components/PublicStates";
 
 function ActorsContent() {
   const searchParams = useSearchParams();
@@ -62,14 +63,17 @@ function ActorsContent() {
       </div>
 
       {isLoading ? (
-        <div className="flex items-center justify-center py-32">
-          <div className="w-12 h-12 border-4 border-brand-secondary border-t-transparent rounded-full animate-spin" />
-        </div>
+        <PeopleGridSkeleton />
       ) : actors.length === 0 ? (
-        <div className="flex flex-col items-center justify-center py-32 gap-6">
-          <Users size={64} className="text-text-muted" />
-          <p className="text-text-dim text-xl">No actors found.</p>
-        </div>
+        <PublicEmptyState
+          icon={emptyIcons.users}
+          title={debouncedSearch ? "No actors found" : "No actors yet"}
+          description={
+            debouncedSearch
+              ? "No live actor data matches this search. Try another name."
+              : "Actors will appear here once movies are imported or cast members are added in admin."
+          }
+        />
       ) : (
         <>
           <motion.div
@@ -142,8 +146,8 @@ export default function ActorsPage() {
     <main className="min-h-screen bg-bg-deep flex flex-col">
       <Header />
       <Suspense fallback={
-        <div className="flex-1 flex items-center justify-center">
-          <div className="w-12 h-12 border-4 border-brand-secondary border-t-transparent rounded-full animate-spin" />
+        <div className="pt-32 pb-24 px-6 md:px-12 max-w-7xl mx-auto w-full">
+          <PeopleGridSkeleton />
         </div>
       }>
         <ActorsContent />

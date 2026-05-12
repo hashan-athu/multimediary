@@ -8,6 +8,7 @@ import { motion, AnimatePresence } from "framer-motion";
 import { cn } from "@/lib/utils";
 import Link from "next/link";
 import { Tooltip, TooltipTrigger, TooltipContent } from "@/components/ui/tooltip";
+import { PublicEmptyState, emptyIcons } from "@/components/PublicStates";
 
 interface HeroCarouselProps {
   movies: Movie[];
@@ -32,7 +33,25 @@ export default function HeroCarousel({ movies }: HeroCarouselProps) {
     emblaApi.on("reInit", onSelect);
   }, [emblaApi, onSelect]);
 
-  if (!movies.length) return null;
+  if (!movies.length) {
+    return (
+      <section className="relative min-h-[70vh] w-full flex items-center bg-bg-surface overflow-hidden">
+        <div className="absolute inset-0 bg-gradient-to-br from-brand-primary/10 via-bg-deep to-brand-secondary/10" />
+        <div className="relative z-10 max-w-7xl mx-auto px-6 md:px-12 w-full">
+          <PublicEmptyState
+            icon={emptyIcons.films}
+            title="No featured movies yet"
+            description="This is a fresh library with no live movie data. Imported or manually added movies will appear here automatically."
+            action={(
+              <Link href="/movies" className="btn-primary px-8 py-3">
+                Browse Library
+              </Link>
+            )}
+          />
+        </div>
+      </section>
+    );
+  }
 
   return (
     <section className="relative h-[90vh] w-full overflow-hidden">

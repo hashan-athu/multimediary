@@ -7,8 +7,9 @@ import Header from "@/components/Header";
 import Footer from "@/components/Footer";
 import MovieCard from "@/components/MovieCard";
 import { motion } from "framer-motion";
-import { ChevronLeft, Film, Layers } from "lucide-react";
+import { ChevronLeft, Layers } from "lucide-react";
 import Link from "next/link";
+import { DetailSkeleton, PublicEmptyState, emptyIcons } from "@/components/PublicStates";
 
 export default function CategoryDetailPage() {
   const { id } = useParams<{ id: string }>();
@@ -26,9 +27,7 @@ export default function CategoryDetailPage() {
     return (
       <main className="min-h-screen bg-bg-deep flex flex-col">
         <Header />
-        <div className="flex-1 flex items-center justify-center">
-          <div className="w-12 h-12 border-4 border-brand-primary border-t-transparent rounded-full animate-spin" />
-        </div>
+        <DetailSkeleton />
         <Footer />
       </main>
     );
@@ -73,10 +72,16 @@ export default function CategoryDetailPage() {
         </div>
 
         {movies.length === 0 ? (
-          <div className="flex flex-col items-center justify-center py-32 gap-6">
-            <Film size={64} className="text-text-muted" />
-            <p className="text-text-dim text-xl">No movies in this category.</p>
-          </div>
+          <PublicEmptyState
+            icon={emptyIcons.films}
+            title="No movies in this category"
+            description="This category exists, but it does not have any live movie data attached yet."
+            action={(
+              <Link href="/movies" className="btn-secondary px-8 py-3">
+                Browse All Movies
+              </Link>
+            )}
+          />
         ) : (
           <motion.div
             initial={{ opacity: 0 }}

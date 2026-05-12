@@ -9,6 +9,7 @@ import MovieCard from "@/components/MovieCard";
 import { motion } from "framer-motion";
 import { ChevronLeft, User, Users } from "lucide-react";
 import Link from "next/link";
+import { DetailSkeleton, PublicEmptyState, emptyIcons } from "@/components/PublicStates";
 
 export default function ActorDetailPage() {
   const { id } = useParams<{ id: string }>();
@@ -26,9 +27,7 @@ export default function ActorDetailPage() {
     return (
       <main className="min-h-screen bg-bg-deep flex flex-col">
         <Header />
-        <div className="flex-1 flex items-center justify-center">
-          <div className="w-16 h-16 border-4 border-brand-secondary border-t-transparent rounded-full animate-spin" />
-        </div>
+        <DetailSkeleton tone="secondary" />
         <Footer />
       </main>
     );
@@ -114,12 +113,23 @@ export default function ActorDetailPage() {
           </div>
         </motion.div>
 
-        {movies.length > 0 && (
-          <div>
-            <div className="flex items-center gap-4 mb-8">
-              <div className="w-1.5 h-8 bg-brand-primary rounded-full shadow-[0_0_10px_rgba(229,9,20,0.5)]" />
-              <h2 className="text-3xl font-outfit font-black text-white uppercase">Filmography</h2>
-            </div>
+        <div>
+          <div className="flex items-center gap-4 mb-8">
+            <div className="w-1.5 h-8 bg-brand-primary rounded-full shadow-[0_0_10px_rgba(229,9,20,0.5)]" />
+            <h2 className="text-3xl font-outfit font-black text-white uppercase">Filmography</h2>
+          </div>
+          {movies.length === 0 ? (
+            <PublicEmptyState
+              icon={emptyIcons.films}
+              title="No movies linked yet"
+              description="This actor exists in the library, but no live movie entries are connected to them yet."
+              action={(
+                <Link href="/movies" className="btn-secondary px-8 py-3">
+                  Browse Movies
+                </Link>
+              )}
+            />
+          ) : (
             <motion.div
               initial={{ opacity: 0 }}
               animate={{ opacity: 1 }}
@@ -136,8 +146,8 @@ export default function ActorDetailPage() {
                 </motion.div>
               ))}
             </motion.div>
-          </div>
-        )}
+          )}
+        </div>
       </div>
 
       <Footer />

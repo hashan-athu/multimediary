@@ -10,11 +10,10 @@ import Footer from "@/components/Footer";
 import { Sparkles } from "lucide-react";
 import { useState } from "react";
 import { MovieParams } from "@/types";
-import { useRouter } from "next/navigation";
 import Link from "next/link";
+import { GenreGridSkeleton, HomeSkeleton, PublicEmptyState, emptyIcons } from "@/components/PublicStates";
 
 export default function Home() {
-  const router = useRouter();
   const [filterParams, setFilterParams] = useState<Partial<MovieParams>>({});
 
   const { data: moviesData, isLoading } = useQuery({
@@ -22,7 +21,7 @@ export default function Home() {
     queryFn: () => apiClient.movies.list({ per_page: 24, ...filterParams }),
   });
 
-  const { data: genreData } = useQuery({
+  const { data: genreData, isLoading: genresLoading } = useQuery({
     queryKey: ["public-genres"],
     queryFn: () => apiClient.genres.list(),
     staleTime: 5 * 60 * 1000,
@@ -40,12 +39,7 @@ export default function Home() {
       <Header />
 
       {isLoading && !hasActiveFilters ? (
-        <div className="flex-1 flex items-center justify-center">
-          <div className="flex flex-col items-center gap-4">
-            <div className="w-16 h-16 border-4 border-brand-primary border-t-transparent rounded-full animate-spin shadow-[0_0_20px_rgba(229,9,20,0.4)]" />
-            <p className="text-brand-secondary font-bold tracking-[0.2em] animate-pulse">LOADING CINEMA...</p>
-          </div>
-        </div>
+        <HomeSkeleton />
       ) : (
         <>
           {!hasActiveFilters && <HeroCarousel movies={featuredMovies} />}
@@ -61,6 +55,12 @@ export default function Home() {
                 title={hasActiveFilters ? "Search Results" : "Latest Releases"}
                 movies={allMovies}
                 viewAllHref={hasActiveFilters ? undefined : "/movies"}
+                emptyTitle={hasActiveFilters ? "No matching movies" : "No latest releases yet"}
+                emptyDescription={
+                  hasActiveFilters
+                    ? "No live data matches these filters. Try changing the search or clearing the filters."
+                    : "There are no movies in the public library yet. Once movies are added in admin, they will appear here."
+                }
               />
 
               {!hasActiveFilters && (
@@ -73,8 +73,17 @@ export default function Home() {
                         Browse by Genre
                       </h2>
                     </div>
-                    <div className="grid grid-cols-2 md:grid-cols-4 lg:grid-cols-6 gap-4">
-                      {(genres.length > 0 ? genres : []).slice(0, 12).map((genre) => (
+                    {genresLoading ? (
+                      <GenreGridSkeleton />
+                    ) : genres.length === 0 ? (
+                      <PublicEmptyState
+                        icon={emptyIcons.layers}
+                        title="No genres yet"
+                        description="Genre shortcuts will appear here after genres are added or imported from TMDB."
+                      />
+                    ) : (
+                      <div className="grid grid-cols-2 md:grid-cols-4 lg:grid-cols-6 gap-4">
+                        {genres.slice(0, 12).map((genre) => (
                         <Link
                           key={genre.id}
                           href={`/movies?genre_id=${genre.id}`}
@@ -92,14 +101,17 @@ export default function Home() {
                             )}
                           </div>
                         </Link>
-                      ))}
-                    </div>
+                        ))}
+                      </div>
+                    )}
                   </section>
 
                   <MovieSection
                     title="Top Trending"
                     movies={trendingMovies}
                     viewAllHref="/movies"
+                    emptyTitle="No trending movies yet"
+                    emptyDescription="Trending rows need movie data first. Add titles in admin and this section will populate automatically."
                   />
 
                   {/* Promo Section */}

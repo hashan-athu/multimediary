@@ -1,0 +1,58 @@
+# Production Docker Compose — Oracle VM
+# ─────────────────────────────────────────────────────────────────────────────
+# This file is deployed to /opt/multimediary/docker-compose.prod.yml on the
+# Oracle VM by the GitHub Actions deploy workflow.
+#
+# Before first run, copy .env.production.example → .env.production and fill
+# in all values. Then run: docker compose -f docker-compose.prod.yml up -d
+# ─────────────────────────────────────────────────────────────────────────────
+
+services:
+
+  # ── PostgreSQL ───────────────────────────────────────────────────────────────
+  db:
+    image: postgres:17-alpine
+    restart: unless-stopped
+    volumes:
+      - pgdata:/var/lib/postgresql/data
+    environment:
+      POSTGRES_USER: ${POSTGRES_USER}
+      POSTGRES_PASSWORD: ${POSTGRES_PASSWORD}
+      POSTGRES_DB: ${POSTGRES_DB}
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U ${POSTGRES_USER}"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+    networks:
+      - backend-net
+
+  # ── Rails API ────────────────────────────────────────────────────────────────
+  backend:
+    # BACKEND_IMAGE is exported by the CI deploy step. Default uses :dev tag.
+    image: ${BACKEND_IMAGE:-ghcr.io/hashan-athu/multimediary/backend:dev}
+    restart: unless-stopped
+    depends_on:
+      db:
+        condition: service_healthy
+    ports:
+      - "80:80"       # Thruster HTTP (upgrade to 443 when SSL is configured)
+    env_file:
+      - .env.production
+    environment:
+      # Point Rails to the "db" Docker service rather than localhost
+      DATABASE_URL: postgres://${POSTGRES_USER}:${POSTGRES_PASSWORD}@db:5432/${POSTGRES_DB}
+      CACHE_DATABASE_URL: postgres://${POSTGRES_USER}:${POSTGRES_PASSWORD}@db:5432/${POSTGRES_CACHE_DB}
+      QUEUE_DATABASE_URL: postgres://${POSTGRES_USER}:${POSTGRES_PASSWORD}@db:5432/${POSTGRES_QUEUE_DB}
+      CABLE_DATABASE_URL: postgres://${POSTGRES_USER}:${POSTGRES_PASSWORD}@db:5432/${POSTGRES_CABLE_DB}
+      RAILS_ENV: production
+      SOLID_QUEUE_IN_PUMA: "true"
+    networks:
+      - backend-net
+
+networks:
+  backend-net:
+    driver: bridge
+
+volumes:
+  pgdata:   # Persistent PostgreSQL data volume; survives container restarts

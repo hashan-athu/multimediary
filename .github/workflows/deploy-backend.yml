@@ -1,0 +1,131 @@
+name: Deploy Backend → Oracle VM
+
+on:
+  push:
+    branches: [dev]
+    paths:
+      - "backend/**"
+      - "deploy/**"
+      - ".github/workflows/deploy-backend.yml"
+
+env:
+  REGISTRY: ghcr.io
+  # github.repository = hashan-athu/multimediary → image = ghcr.io/hashan-athu/multimediary/backend
+  IMAGE_NAME: ${{ github.repository }}/backend
+
+jobs:
+  # ─────────────────────────────────────────────
+  # 1. Build & push image to GHCR
+  # ─────────────────────────────────────────────
+  build-and-push:
+    name: 🐳 Build & Push Docker Image
+    runs-on: ubuntu-latest
+    permissions:
+      contents: read
+      packages: write
+
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v4
+
+      - name: Set up Docker Buildx
+        uses: docker/setup-buildx-action@v3
+
+      - name: Log in to GitHub Container Registry
+        uses: docker/login-action@v3
+        with:
+          registry: ${{ env.REGISTRY }}
+          username: ${{ github.actor }}
+          password: ${{ secrets.GITHUB_TOKEN }}
+
+      - name: Extract Docker metadata
+        id: meta
+        uses: docker/metadata-action@v5
+        with:
+          images: ${{ env.REGISTRY }}/${{ env.IMAGE_NAME }}
+          tags: |
+            # Always tag as :dev (stable ref for the compose file on the server)
+            type=raw,value=dev
+            # Also tag by short SHA for audit trail
+            type=sha,prefix=sha-
+
+      - name: Build and push Docker image
+        uses: docker/build-push-action@v5
+        with:
+          context: ./backend
+          file: ./backend/Dockerfile
+          # Oracle VM (AMD64); adjust to arm64 if using Ampere A1 shape
+          platforms: linux/amd64
+          push: true
+          tags: ${{ steps.meta.outputs.tags }}
+          labels: ${{ steps.meta.outputs.labels }}
+          # Layer caching via GitHub Actions cache
+          cache-from: type=gha
+          cache-to: type=gha,mode=max
+
+  # ─────────────────────────────────────────────
+  # 2. SSH into Oracle VM and restart container
+  # ─────────────────────────────────────────────
+  deploy:
+    name: 🚀 Deploy to Oracle VM
+    runs-on: ubuntu-latest
+    needs: build-and-push
+    environment: dev   # maps to the "dev" GitHub Environment (set protection rules there)
+
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v4
+
+      # Copy the production compose file to the server.
+      # If the file hasn't changed this is a no-op but keeps the server in sync.
+      - name: Copy compose file to server
+        uses: appleboy/scp-action@v0.1.7
+        with:
+          host: ${{ secrets.ORACLE_VM_HOST }}
+          username: ${{ secrets.ORACLE_VM_USER }}
+          key: ${{ secrets.ORACLE_VM_SSH_KEY }}
+          source: "deploy/docker-compose.prod.yml"
+          target: "/opt/multimediary"
+          strip_components: 1      # strips "deploy/" prefix → lands as docker-compose.prod.yml
+
+      - name: Deploy & restart containers
+        uses: appleboy/ssh-action@v1.0.3
+        env:
+          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+          GH_ACTOR: ${{ github.actor }}
+          RAILS_MASTER_KEY: ${{ secrets.RAILS_MASTER_KEY }}
+          BACKEND_IMAGE: ${{ env.REGISTRY }}/${{ env.IMAGE_NAME }}:dev
+        with:
+          host: ${{ secrets.ORACLE_VM_HOST }}
+          username: ${{ secrets.ORACLE_VM_USER }}
+          key: ${{ secrets.ORACLE_VM_SSH_KEY }}
+          envs: GH_TOKEN,GH_ACTOR,RAILS_MASTER_KEY,BACKEND_IMAGE
+          script: |
+            set -euo pipefail
+            echo "▶ Logging in to GHCR..."
+            echo "${GH_TOKEN}" | docker login ghcr.io -u "${GH_ACTOR}" --password-stdin
+
+            echo "▶ Pulling latest image: ${BACKEND_IMAGE}"
+            docker pull "${BACKEND_IMAGE}"
+
+            echo "▶ Updating RAILS_MASTER_KEY in .env.production..."
+            cd /opt/multimediary
+            if grep -q "^RAILS_MASTER_KEY=" .env.production 2>/dev/null; then
+              sed -i "s|^RAILS_MASTER_KEY=.*|RAILS_MASTER_KEY=${RAILS_MASTER_KEY}|" .env.production
+            else
+              echo "RAILS_MASTER_KEY=${RAILS_MASTER_KEY}" >> .env.production
+            fi
+
+            echo "▶ Starting/restarting containers..."
+            # BACKEND_IMAGE is consumed by docker-compose.prod.yml via ${BACKEND_IMAGE}
+            export BACKEND_IMAGE="${BACKEND_IMAGE}"
+            docker compose -f docker-compose.prod.yml up -d --remove-orphans
+
+            echo "▶ Waiting for backend to be healthy..."
+            sleep 10
+            docker compose -f docker-compose.prod.yml ps
+
+            echo "▶ Pruning unused images..."
+            docker image prune -f
+
+            echo "✅ Deployment complete!"

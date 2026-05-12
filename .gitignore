@@ -49,3 +49,9 @@ Temporary Items
 # Ignore all local history of files
 .history
 .ionide
+
+### Secrets — NEVER commit these ###
+deploy/.env.production
+.env.production
+.env.local
+.env*.local

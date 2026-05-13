@@ -39,7 +39,7 @@ export default function MovieSection({
 
   return (
     <div className="space-y-6">
-      <div className="flex items-center justify-between">
+      <div className="flex flex-col md:flex-row items-start md:items-center gap-6 justify-between">
         <div className="flex items-center gap-4">
           <div className="w-1.5 h-8 bg-brand-primary rounded-full shadow-[0_0_10px_rgba(229,9,20,0.5)]" />
           <h2 className="text-3xl font-outfit font-black tracking-tight text-white">
@@ -77,7 +77,7 @@ export default function MovieSection({
         initial="hidden"
         whileInView="show"
         viewport={{ once: true, margin: "-100px" }}
-        className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-6 gap-6"
+        className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-4 xl:grid-cols-6 gap-6"
       >
         {movies.map((movie) => (
           <motion.div key={movie.id} variants={item}>

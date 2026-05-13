@@ -87,7 +87,7 @@ export default function HeroCarousel({ movies }: HeroCarouselProps) {
   return (
     <section className="relative w-full max-w-full overflow-hidden bg-bg-deep">
       <div
-        className="h-[82svh] min-h-[640px] w-full max-w-full overflow-hidden md:h-[74svh] md:min-h-[680px] lg:h-[76vh] lg:min-h-[620px] xl:h-[80vh]"
+        className="h-[82svh] min-h-160 w-full max-w-full overflow-hidden md:h-[74svh] md:min-h-170 lg:h-[76vh] lg:min-h-155 xl:h-[80vh]"
         ref={emblaRef}
       >
         <div className="flex h-full">

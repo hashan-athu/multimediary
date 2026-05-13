@@ -44,7 +44,7 @@ export default function Home() {
         <>
           {!hasActiveFilters && <HeroCarousel movies={featuredMovies} />}
 
-          <div className={`relative z-20 space-y-24 pb-20 ${!hasActiveFilters ? "-mt-32" : "mt-24"}`}>
+          <div className={`relative z-20 space-y-20 pb-20 md:space-y-24 ${!hasActiveFilters ? "mt-4 md:mt-6" : "mt-24"}`}>
             <SearchFilter
               onFilter={(params) => setFilterParams(params)}
               initialParams={filterParams}

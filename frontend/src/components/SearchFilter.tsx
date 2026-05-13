@@ -66,20 +66,20 @@ export default function SearchFilter({ onFilter, initialParams = {} }: SearchFil
   const activeFilterCount = [genreId, categoryId, year].filter(Boolean).length;
 
   return (
-    <div className="w-full max-w-5xl mx-auto px-6 mb-12">
+    <div className="w-full max-w-5xl mx-auto px-5 md:px-6 mb-12">
       <div className="relative group">
-        <div className="flex items-center gap-4">
+        <div className="flex flex-col gap-3 sm:flex-row sm:items-center md:gap-4">
           <div className="relative flex-1">
             <Search
-              className="absolute left-5 top-1/2 -translate-y-1/2 text-text-muted group-focus-within:text-brand-secondary transition-colors"
-              size={22}
+              className="absolute left-4 top-1/2 -translate-y-1/2 text-text-muted group-focus-within:text-brand-secondary transition-colors md:left-5"
+              size={21}
             />
             <input
               type="text"
-              placeholder="Search movies, actors, or genres..."
+              placeholder="Search movies..."
               value={query}
               onChange={(e) => handleQueryChange(e.target.value)}
-              className="w-full bg-white/5 border border-white/10 rounded-2xl pl-14 pr-6 py-5 text-lg outline-none focus:ring-2 focus:ring-brand-secondary/30 focus:bg-white/10 transition-all placeholder:text-text-muted"
+              className="h-14 w-full rounded-2xl border border-white/10 bg-white/[0.06] pl-12 pr-4 text-base outline-none transition-all placeholder:text-text-muted focus:bg-white/10 focus:ring-2 focus:ring-brand-secondary/30 md:h-16 md:pl-14 md:pr-6 md:text-lg"
             />
           </div>
 
@@ -87,7 +87,7 @@ export default function SearchFilter({ onFilter, initialParams = {} }: SearchFil
             type="button"
             onClick={() => setIsFilterOpen(!isFilterOpen)}
             className={cn(
-              "btn-secondary py-5 px-8 flex items-center gap-3 relative",
+              "btn-secondary relative h-14 w-full justify-center gap-3 px-6 py-0 sm:w-auto md:h-16 md:px-8",
               isFilterOpen && "bg-white/10 border-brand-secondary/50 text-brand-secondary"
             )}
           >
@@ -108,7 +108,7 @@ export default function SearchFilter({ onFilter, initialParams = {} }: SearchFil
               initial={{ opacity: 0, y: -10 }}
               animate={{ opacity: 1, y: 0 }}
               exit={{ opacity: 0, y: -10 }}
-              className="absolute top-full left-0 right-0 mt-4 p-8 glass-panel rounded-3xl z-30 grid grid-cols-1 md:grid-cols-4 gap-8 shadow-2xl"
+              className="absolute top-full left-0 right-0 z-30 mt-4 grid grid-cols-1 gap-5 rounded-3xl p-5 shadow-2xl glass-panel md:grid-cols-4 md:gap-8 md:p-8"
             >
               <div className="space-y-3">
                 <label className="text-xs font-black uppercase tracking-widest text-text-dim">Genre</label>
@@ -158,10 +158,10 @@ export default function SearchFilter({ onFilter, initialParams = {} }: SearchFil
                 </select>
               </div>
 
-              <div className="md:col-span-4 flex justify-end gap-4 pt-4 border-t border-white/5">
+              <div className="flex flex-col gap-3 border-t border-white/5 pt-4 md:col-span-4 md:flex-row md:justify-end md:gap-4">
                 <button
                   onClick={handleReset}
-                  className="px-6 py-3 font-bold text-text-dim hover:text-white transition-colors"
+                  className="rounded-full px-6 py-3 font-bold text-text-dim transition-colors hover:text-white"
                 >
                   Reset
                 </button>

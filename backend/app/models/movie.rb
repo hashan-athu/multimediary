@@ -17,7 +17,7 @@ class Movie < ApplicationRecord
   has_and_belongs_to_many :qualities
 
   def self.ransackable_attributes(_auth_object = nil)
-    %w[name year language country description story tagline tmdb_id category_id director_id disk_id]
+    %w[name year language country description story tagline poster_url backdrop_url tmdb_id category_id director_id disk_id]
   end
 
   def self.ransackable_associations(_auth_object = nil)

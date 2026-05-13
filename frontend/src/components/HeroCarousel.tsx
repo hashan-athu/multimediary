@@ -7,6 +7,7 @@ import { Movie } from "@/types";
 import { motion, AnimatePresence } from "framer-motion";
 import { cn } from "@/lib/utils";
 import Link from "next/link";
+import Image from "next/image";
 import { Tooltip, TooltipTrigger, TooltipContent } from "@/components/ui/tooltip";
 import { PublicEmptyState, emptyIcons } from "@/components/PublicStates";
 
@@ -28,9 +29,14 @@ export default function HeroCarousel({ movies }: HeroCarouselProps) {
 
   useEffect(() => {
     if (!emblaApi) return;
-    onSelect();
     emblaApi.on("select", onSelect);
     emblaApi.on("reInit", onSelect);
+    const frame = requestAnimationFrame(onSelect);
+    return () => {
+      cancelAnimationFrame(frame);
+      emblaApi.off("select", onSelect);
+      emblaApi.off("reInit", onSelect);
+    };
   }, [emblaApi, onSelect]);
 
   if (!movies.length) {
@@ -54,16 +60,16 @@ export default function HeroCarousel({ movies }: HeroCarouselProps) {
   }
 
   return (
-    <section className="relative h-[90vh] w-full overflow-hidden">
-      <div className="overflow-hidden h-full" ref={emblaRef}>
+    <section className="relative h-[90vh] w-full max-w-full overflow-hidden bg-bg-deep">
+      <div className="h-full w-full max-w-full overflow-hidden" ref={emblaRef}>
         <div className="flex h-full">
           {movies.map((movie, index) => (
-            <div key={movie.id} className="flex-[0_0_100%] min-w-0 relative h-full">
+            <div key={movie.id} className="relative h-full min-w-0 flex-[0_0_100%] overflow-hidden">
               <div className="absolute inset-0">
                 <img
-                  src={movie.poster_url || "/placeholder-hero.jpg"}
+                  src={movie.backdrop_url || movie.poster_url || "/placeholder-hero.jpg"}
                   alt={movie.name}
-                  className="w-full h-full object-cover object-top scale-105"
+                  className="w-full h-full object-cover object-center scale-105"
                 />
                 <div className="absolute inset-0 bg-gradient-to-r from-bg-deep via-bg-deep/40 to-transparent" />
                 <div className="absolute inset-0 bg-gradient-to-t from-bg-deep via-transparent to-transparent" />

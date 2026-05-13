@@ -4,7 +4,7 @@ module Public
   class MovieCardSerializer < Blueprinter::Base
     identifier :id
 
-    fields :name, :year, :language, :country, :runtime, :poster_url, :tagline
+    fields :name, :year, :language, :country, :runtime, :poster_url, :backdrop_url, :tagline
 
     field :file_size do |movie|
       movie.file_size.to_f

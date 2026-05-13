@@ -59,6 +59,7 @@ export default function MovieDetailPage() {
     movie.ratings?.length
       ? movie.ratings.reduce((sum, r) => sum + (r.rating_value / r.rating_out_of) * 10, 0) / movie.ratings.length
       : null;
+  const heroImage = movie.backdrop_url || movie.poster_url;
 
   return (
     <main className="min-h-screen bg-bg-deep flex flex-col">
@@ -66,11 +67,11 @@ export default function MovieDetailPage() {
 
       {/* Hero backdrop */}
       <div className="relative h-[60vh] w-full overflow-hidden">
-        {movie.poster_url ? (
+        {heroImage ? (
           <img
-            src={movie.poster_url}
+            src={heroImage}
             alt={movie.name}
-            className="w-full h-full object-cover object-top scale-105"
+            className="w-full h-full object-cover object-center scale-105"
           />
         ) : (
           <div className="w-full h-full bg-bg-surface" />
@@ -132,7 +133,7 @@ export default function MovieDetailPage() {
             </h1>
 
             {movie.tagline && (
-              <p className="text-xl text-text-dim italic">"{movie.tagline}"</p>
+              <p className="text-xl text-text-dim italic">&ldquo;{movie.tagline}&rdquo;</p>
             )}
 
             {/* Meta row */}

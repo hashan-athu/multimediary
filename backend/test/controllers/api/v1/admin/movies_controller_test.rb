@@ -126,6 +126,7 @@ module Api
             tagline: "Your mind is the scene", runtime: 148,
             language: "English", country: "USA",
             poster_url: "https://example.com/p.jpg",
+            backdrop_url: "https://example.com/b.jpg",
             tmdb_id: 27205, genres: [ "Action", "Sci-Fi" ],
             director: { first_name: "Christopher", last_name: "Nolan" },
             actors: [ { first_name: "Leonardo", last_name: "DiCaprio", image_url: nil } ]
@@ -137,7 +138,9 @@ module Api
                  headers: @headers,
                  as: :json
             assert_response :created
-            assert_equal "Inception", JSON.parse(response.body).dig("movie", "name")
+            movie = JSON.parse(response.body)["movie"]
+            assert_equal "Inception", movie["name"]
+            assert_equal "https://example.com/b.jpg", movie["backdrop_url"]
             assert Movie.exists?(tmdb_id: 27205)
           end
         end

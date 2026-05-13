@@ -652,6 +652,7 @@ function FileInfoTab({
   const [fileSize, setFileSize] = useState(movie.file_size?.toString() ?? "");
   const [version, setVersion] = useState(movie.version ?? "");
   const [posterUrl, setPosterUrl] = useState(movie.poster_url ?? "");
+  const [backdropUrl, setBackdropUrl] = useState(movie.backdrop_url ?? "");
   const [saving, setSaving] = useState(false);
 
   const handleSave = async () => {
@@ -660,7 +661,8 @@ function FileInfoTab({
       await apiClient.movies.update(movieId, {
         file_size: fileSize || undefined,
         version: version || undefined,
-        poster_url: posterUrl || undefined,
+        poster_url: posterUrl || null,
+        backdrop_url: backdropUrl || null,
       });
       toast.success("File info saved");
       onSaved();
@@ -691,6 +693,17 @@ function FileInfoTab({
           {posterUrl && (
             <div className="w-24 aspect-[2/3] rounded-lg overflow-hidden mt-2">
               <PosterImage src={posterUrl} alt="Preview" className="w-full h-full" />
+            </div>
+          )}
+        </div>
+        <div className="col-span-2 space-y-2">
+          <label className="text-[11px] font-bold text-[#4F5C72] uppercase tracking-wider block">Backdrop URL</label>
+          <Input value={backdropUrl} onChange={(e) => setBackdropUrl(e.target.value)}
+            placeholder="https://..." className="h-11 bg-[#EDF1F7] border-none rounded-xl" />
+          {backdropUrl && (
+            <div className="w-40 aspect-video rounded-lg overflow-hidden mt-2 bg-[#EDF1F7]">
+              {/* eslint-disable-next-line @next/next/no-img-element */}
+              <img src={backdropUrl} alt="Backdrop preview" className="w-full h-full object-cover" />
             </div>
           )}
         </div>

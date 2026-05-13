@@ -18,6 +18,7 @@ const ENRICHABLE_FIELDS = [
   { key: "language",    label: "Language" },
   { key: "country",     label: "Country" },
   { key: "poster_url",  label: "Poster image" },
+  { key: "backdrop_url", label: "Backdrop image" },
   { key: "tmdb_id",     label: "TMDb ID" },
   { key: "genre_ids",   label: "Genres (matched to library)" },
   { key: "director_id", label: "Director (matched to library)" },
@@ -138,6 +139,7 @@ export function TMDbEnrichmentPanel({ currentTmdbId, onEnrich }: TMDbEnrichmentP
       if (checkedFields.has("language"))    toApply.language    = data.language;
       if (checkedFields.has("country"))     toApply.country     = data.country;
       if (checkedFields.has("poster_url"))  toApply.poster_url  = data.poster_url;
+      if (checkedFields.has("backdrop_url")) toApply.backdrop_url = data.backdrop_url;
       if (checkedFields.has("tmdb_id"))     toApply.tmdb_id     = data.tmdb_id ? Number(data.tmdb_id) : null;
       if (checkedFields.has("genre_ids"))   toApply.genre_ids   = matchedGenres.map((g) => g.id);
       if (checkedFields.has("director_id") && matchedDirector)

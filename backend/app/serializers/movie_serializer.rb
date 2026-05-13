@@ -5,7 +5,7 @@ class MovieSerializer < Blueprinter::Base
 
   view :list do
     fields :name, :year, :language, :country, :runtime, :file_size,
-           :version, :poster_url, :tagline, :tmdb_id
+           :version, :poster_url, :backdrop_url, :tagline, :tmdb_id
     association :category, blueprint: CategorySerializer
     association :disk, blueprint: DiskSerializer, view: :compact
     association :genres, blueprint: GenreSerializer

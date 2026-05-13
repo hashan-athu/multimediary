@@ -5,7 +5,7 @@ module Public
     identifier :id
 
     fields :name, :year, :language, :country, :runtime,
-           :poster_url, :tagline, :description, :story, :version, :tmdb_id
+           :poster_url, :backdrop_url, :tagline, :description, :story, :version, :tmdb_id
 
     field :file_size do |movie|
       movie.file_size.to_f

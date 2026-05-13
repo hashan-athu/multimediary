@@ -94,6 +94,7 @@ module Api
               language:    data[:language],
               country:     data[:country],
               poster_url:  data[:poster_url],
+              backdrop_url: data[:backdrop_url],
               tmdb_id:     data[:tmdb_id],
               disk_id:     params[:disk_id],
               category_id: params[:category_id],
@@ -135,7 +136,7 @@ module Api
         def movie_params
           params.require(:movie).permit(
             :name, :year, :language, :country, :description, :story,
-            :tagline, :runtime, :file_size, :version, :poster_url,
+            :tagline, :runtime, :file_size, :version, :poster_url, :backdrop_url,
             :disk_id, :category_id, :director_id, :tmdb_id,
             actor_ids: [], genre_ids: [], quality_ids: []
           )

@@ -2,7 +2,7 @@
 
 class TmdbService
   BASE_URL = "https://api.themoviedb.org/3/"
-  IMAGE_BASE_URL = "https://image.tmdb.org/t/p/w500"
+  IMAGE_BASE_URL = "https://image.tmdb.org/t/p"
 
   class TmdbError < StandardError; end
 
@@ -33,7 +33,8 @@ class TmdbService
       runtime: data["runtime"],
       language: data.dig("spoken_languages", 0, "english_name"),
       country: data.dig("production_countries", 0, "name"),
-      poster_url: build_poster_url(data["poster_path"]),
+      poster_url: build_image_url(data["poster_path"], "w500"),
+      backdrop_url: build_image_url(data["backdrop_path"], "w1280"),
       tmdb_id: data["id"],
       vote_average: data["vote_average"],
       vote_count: data["vote_count"],
@@ -59,8 +60,8 @@ class TmdbService
     nil
   end
 
-  def build_poster_url(path)
-    "#{IMAGE_BASE_URL}#{path}" if path.present?
+  def build_image_url(path, size)
+    "#{IMAGE_BASE_URL}/#{size}#{path}" if path.present?
   end
 
   def extract_genres(genres_data)
@@ -80,7 +81,7 @@ class TmdbService
       {
         first_name: c["name"].split.first,
         last_name: c["name"].split[1..].join(" "),
-        image_url: build_poster_url(c["profile_path"])
+        image_url: build_image_url(c["profile_path"], "w500")
       }
     end
   end

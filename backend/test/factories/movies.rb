@@ -10,5 +10,9 @@ FactoryBot.define do
     trait :with_poster do
       poster_url { "https://image.tmdb.org/t/p/w500/example.jpg" }
     end
+
+    trait :with_backdrop do
+      backdrop_url { "https://image.tmdb.org/t/p/w1280/example.jpg" }
+    end
   end
 end

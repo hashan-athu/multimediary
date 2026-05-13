@@ -33,7 +33,7 @@ module Api
         def recent
           count = [ (params[:count] || 12).to_i, 48 ].min
           @movies = Movie.includes(:category, :disk, :genres, :qualities)
-                         .where.not(poster_url: [ nil, "" ])
+                         .where("NULLIF(backdrop_url, '') IS NOT NULL OR NULLIF(poster_url, '') IS NOT NULL")
                          .order(created_at: :desc)
                          .limit(count)
 
@@ -46,7 +46,7 @@ module Api
         def random
           count = [ (params[:count] || 8).to_i, 24 ].min
           @movies = Movie.includes(:category, :disk, :genres, :qualities)
-                         .where.not(poster_url: [ nil, "" ])
+                         .where("NULLIF(backdrop_url, '') IS NOT NULL OR NULLIF(poster_url, '') IS NOT NULL")
                          .order(Arel.sql("RANDOM()"))
                          .limit(count)
 

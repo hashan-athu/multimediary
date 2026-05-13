@@ -69,6 +69,7 @@ export interface MovieList {
   file_size?: number;
   version?: string;
   poster_url?: string;
+  backdrop_url?: string;
   has_poster?: boolean;
   tagline?: string;
   tmdb_id?: number;
@@ -141,4 +142,5 @@ export interface TMDbSearchResult {
   release_date: string;
   overview: string;
   poster_path?: string;
+  backdrop_path?: string;
 }

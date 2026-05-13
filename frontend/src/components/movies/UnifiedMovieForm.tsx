@@ -30,6 +30,7 @@ const movieSchema = z.object({
   file_size:   z.string().optional().nullable(),
   version:     z.string().optional().nullable(),
   poster_url:  z.string().optional().nullable(),
+  backdrop_url: z.string().optional().nullable(),
   description: z.string().optional().nullable(),
   story:       z.string().optional().nullable(),
   tmdb_id:     z.number().optional().nullable(),
@@ -102,6 +103,7 @@ export function UnifiedMovieForm({ mode, initialData, onSuccess }: UnifiedMovieF
       file_size:   String(initialData?.file_size  ?? ""),
       version:     initialData?.version     ?? "",
       poster_url:  initialData?.poster_url  ?? "",
+      backdrop_url: initialData?.backdrop_url ?? "",
       description: initialData?.description ?? "",
       story:       initialData?.story       ?? "",
       tmdb_id:     initialData?.tmdb_id     ?? null,
@@ -126,6 +128,7 @@ export function UnifiedMovieForm({ mode, initialData, onSuccess }: UnifiedMovieF
         file_size:   String(initialData.file_size  ?? ""),
         version:     initialData.version     ?? "",
         poster_url:  initialData.poster_url  ?? "",
+        backdrop_url: initialData.backdrop_url ?? "",
         description: initialData.description ?? "",
         story:       initialData.story       ?? "",
         tmdb_id:     initialData.tmdb_id     ?? null,
@@ -209,7 +212,8 @@ export function UnifiedMovieForm({ mode, initialData, onSuccess }: UnifiedMovieF
         tagline:     data.tagline     || undefined,
         file_size:   data.file_size   || undefined,
         version:     data.version     || undefined,
-        poster_url:  data.poster_url  || undefined,
+        poster_url:  data.poster_url  || null,
+        backdrop_url: data.backdrop_url || null,
         description: data.description || undefined,
         story:       data.story       || undefined,
         tmdb_id:     data.tmdb_id     ?? undefined,
@@ -269,6 +273,7 @@ export function UnifiedMovieForm({ mode, initialData, onSuccess }: UnifiedMovieF
   const directorId = form.watch("director_id");
   const actorIds   = form.watch("actor_ids")   ?? [];
   const posterUrl  = form.watch("poster_url")  ?? "";
+  const backdropUrl = form.watch("backdrop_url") ?? "";
   const tmdbId     = form.watch("tmdb_id");
   const yearVal    = form.watch("year");
   const runtimeVal = form.watch("runtime");
@@ -357,15 +362,24 @@ export function UnifiedMovieForm({ mode, initialData, onSuccess }: UnifiedMovieF
         </div>
       </FormSection>
 
-      {/* ── Poster & File Info ───────────────────────────────────────────── */}
-      <FormSection title="Poster & File Information" description="Poster image and physical file details">
+      {/* ── Artwork & File Info ──────────────────────────────────────────── */}
+      <FormSection title="Artwork & File Information" description="Backdrop, poster and physical file details">
         <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-          <div className="md:col-span-2">
+          <div>
             <ImageUploadField
               label="Movie Poster"
               value={posterUrl}
               onChange={(url) => form.setValue("poster_url", url, { shouldDirty: true })}
               aspectRatio="poster"
+            />
+          </div>
+
+          <div>
+            <ImageUploadField
+              label="Backdrop Image"
+              value={backdropUrl}
+              onChange={(url) => form.setValue("backdrop_url", url, { shouldDirty: true })}
+              aspectRatio="backdrop"
             />
           </div>
 

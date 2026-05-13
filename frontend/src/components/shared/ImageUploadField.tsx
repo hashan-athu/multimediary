@@ -9,7 +9,7 @@ interface ImageUploadFieldProps {
   value: string;
   onChange: (url: string) => void;
   label?: string;
-  aspectRatio?: "square" | "poster";
+  aspectRatio?: "square" | "poster" | "backdrop";
 }
 
 export function ImageUploadField({
@@ -22,7 +22,14 @@ export function ImageUploadField({
   const [uploading, setUploading] = useState(false);
   const fileRef = useRef<HTMLInputElement>(null);
 
-  const previewClass = aspectRatio === "poster" ? "w-20 h-30" : "w-20 h-20";
+  const previewClass =
+    aspectRatio === "poster" ? "w-20 h-30" : aspectRatio === "backdrop" ? "w-32 h-18" : "w-20 h-20";
+  const previewStyle =
+    aspectRatio === "poster"
+      ? { width: 80, height: 120 }
+      : aspectRatio === "backdrop"
+        ? { width: 128, height: 72 }
+        : { width: 80, height: 80 };
 
   const handleFileChange = async (e: React.ChangeEvent<HTMLInputElement>) => {
     const file = e.target.files?.[0];
@@ -82,7 +89,7 @@ export function ImageUploadField({
       <div className="flex gap-3 items-start">
         <div
           className={`${previewClass} flex-shrink-0 rounded-lg bg-[#EDF1F7] overflow-hidden flex items-center justify-center border border-[#E0E8EF] relative`}
-          style={aspectRatio === "poster" ? { width: 80, height: 120 } : { width: 80, height: 80 }}
+          style={previewStyle}
         >
           {value ? (
             <>

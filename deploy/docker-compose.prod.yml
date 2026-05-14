@@ -93,8 +93,8 @@ services:
       BACKEND_QUEUE_DATABASE_NAME: ${POSTGRES_QUEUE_DB}
       BACKEND_CABLE_DATABASE_NAME: ${POSTGRES_CABLE_DB}
       SOLID_QUEUE_IN_PUMA: "true"
-      # Limit Puma workers/threads for 1 GB RAM VMs
-      WEB_CONCURRENCY: "1"
+      # Single-mode Puma (no worker processes) — saves ~50 MB RSS vs cluster mode with 1 worker
+      WEB_CONCURRENCY: "0"
       RAILS_MAX_THREADS: "3"
       # Reduce Ruby's memory allocator arena count to lower RSS
       MALLOC_ARENA_MAX: "2"

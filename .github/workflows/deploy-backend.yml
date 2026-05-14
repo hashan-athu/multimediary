@@ -11,7 +11,6 @@ on:
 
 env:
   REGISTRY: ghcr.io
-  # github.repository = hashan-athu/multimediary → image = ghcr.io/hashan-athu/multimediary/backend
   IMAGE_NAME: ${{ github.repository }}/backend
 
 jobs:
@@ -19,7 +18,7 @@ jobs:
   # 1. Build & push image to GHCR
   # ─────────────────────────────────────────────
   build-and-push:
-    name: 🐳 Build & Push Docker Image
+    name: Build & Push Docker Image
     runs-on: ubuntu-latest
     permissions:
       contents: read
@@ -45,9 +44,7 @@ jobs:
         with:
           images: ${{ env.REGISTRY }}/${{ env.IMAGE_NAME }}
           tags: |
-            # Always tag as :dev (stable ref for the compose file on the server)
             type=raw,value=dev
-            # Also tag by short SHA for audit trail
             type=sha,prefix=sha-
 
       - name: Build and push Docker image
@@ -55,23 +52,21 @@ jobs:
         with:
           context: ./backend
           file: ./backend/Dockerfile
-          # Oracle VM (AMD64); adjust to arm64 if using Ampere A1 shape
           platforms: linux/amd64
           push: true
           tags: ${{ steps.meta.outputs.tags }}
           labels: ${{ steps.meta.outputs.labels }}
-          # Layer caching via GitHub Actions cache
           cache-from: type=gha
           cache-to: type=gha,mode=max
 
   # ─────────────────────────────────────────────
-  # 2. SSH into Oracle VM and restart container
+  # 2. Deploy to Oracle VM
   # ─────────────────────────────────────────────
   deploy:
-    name: 🚀 Deploy to Oracle VM
+    name: Deploy to Oracle VM
     runs-on: ubuntu-latest
     needs: build-and-push
-    environment: dev   # maps to the "dev" GitHub Environment (set protection rules there)
+    environment: dev
     permissions:
       contents: read
       packages: read
@@ -80,7 +75,7 @@ jobs:
       - name: Checkout repository
         uses: actions/checkout@v4
 
-      - name: Validate required deployment secrets
+      - name: Validate required secrets
         env:
           ORACLE_VM_HOST: ${{ secrets.ORACLE_VM_HOST }}
           ORACLE_VM_USER: ${{ secrets.ORACLE_VM_USER }}
@@ -94,72 +89,66 @@ jobs:
           POSTGRES_CABLE_DB: ${{ secrets.POSTGRES_CABLE_DB }}
           TMDB_API_KEY: ${{ secrets.TMDB_API_KEY }}
           CORS_ALLOWED_ORIGINS: ${{ secrets.CORS_ALLOWED_ORIGINS }}
+          BACKEND_DOMAIN: ${{ secrets.BACKEND_DOMAIN }}
         run: |
           set -euo pipefail
-
           missing=0
           required_secrets=(
-            ORACLE_VM_HOST
-            ORACLE_VM_USER
-            ORACLE_VM_SSH_KEY
+            ORACLE_VM_HOST ORACLE_VM_USER ORACLE_VM_SSH_KEY
             RAILS_MASTER_KEY
-            POSTGRES_USER
-            POSTGRES_PASSWORD
-            POSTGRES_DB
-            POSTGRES_CACHE_DB
-            POSTGRES_QUEUE_DB
-            POSTGRES_CABLE_DB
-            TMDB_API_KEY
-            CORS_ALLOWED_ORIGINS
+            POSTGRES_USER POSTGRES_PASSWORD POSTGRES_DB
+            POSTGRES_CACHE_DB POSTGRES_QUEUE_DB POSTGRES_CABLE_DB
+            TMDB_API_KEY CORS_ALLOWED_ORIGINS BACKEND_DOMAIN
           )
-
           for name in "${required_secrets[@]}"; do
             if [ -z "${!name:-}" ]; then
-              echo "::error title=Missing GitHub secret::${name} is not configured for the dev environment or repository."
+              echo "::error title=Missing secret::${name} is not set in the dev environment."
               missing=1
             fi
           done
-
           if [ -n "${ORACLE_VM_SSH_KEY:-}" ] && ! printf '%s' "${ORACLE_VM_SSH_KEY}" | grep -q "BEGIN .*PRIVATE KEY"; then
-            echo "::error title=Invalid SSH key secret::ORACLE_VM_SSH_KEY must contain the full private key, including BEGIN/END lines."
+            echo "::error title=Invalid SSH key::ORACLE_VM_SSH_KEY must include BEGIN/END lines."
             missing=1
           fi
+          [ "${missing}" -eq 0 ] || exit 1
 
-          if [ "${missing}" -ne 0 ]; then
-            exit 1
-          fi
-
-      - name: Prepare server directory and verify Docker
-        uses: appleboy/ssh-action@v1.0.3
-        with:
-          host: ${{ secrets.ORACLE_VM_HOST }}
-          username: ${{ secrets.ORACLE_VM_USER }}
-          key: ${{ secrets.ORACLE_VM_SSH_KEY }}
-          script: |
-            set -euo pipefail
-
-            sudo install -d -m 755 -o "$(id -un)" -g "$(id -gn)" /opt/multimediary
-
-            docker --version
-            docker compose version
-
-      # Copy the production compose file to the server.
-      # If the file hasn't changed this is a no-op but keeps the server in sync.
-      - name: Copy compose file to server
+      # ── Copy deploy files to VM ──────────────────────────────────────────────
+      - name: Copy compose and Caddyfile to server
         uses: appleboy/scp-action@v0.1.7
         with:
           host: ${{ secrets.ORACLE_VM_HOST }}
           username: ${{ secrets.ORACLE_VM_USER }}
           key: ${{ secrets.ORACLE_VM_SSH_KEY }}
-          source: "deploy/docker-compose.prod.yml"
+          source: "deploy/docker-compose.prod.yml,deploy/Caddyfile"
           target: "/opt/multimediary"
-          strip_components: 1      # strips "deploy/" prefix → lands as docker-compose.prod.yml
+          strip_components: 1
 
-      - name: Deploy & restart containers
+      # ── Pull image on VM while old containers are still running ─────────────
+      - name: Pull new image on VM
         uses: appleboy/ssh-action@v1.0.3
         env:
           GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
           GH_ACTOR: ${{ github.actor }}
+          BACKEND_IMAGE: ${{ env.REGISTRY }}/${{ env.IMAGE_NAME }}:dev
+        with:
+          host: ${{ secrets.ORACLE_VM_HOST }}
+          username: ${{ secrets.ORACLE_VM_USER }}
+          key: ${{ secrets.ORACLE_VM_SSH_KEY }}
+          envs: GH_TOKEN,GH_ACTOR,BACKEND_IMAGE
+          # Tight timeout — pull only; old containers keep serving during this step
+          command_timeout: 8m
+          script: |
+            set -euo pipefail
+            echo "Logging in to GHCR..."
+            echo "${GH_TOKEN}" | docker login ghcr.io -u "${GH_ACTOR}" --password-stdin
+            echo "Pulling: ${BACKEND_IMAGE}"
+            docker pull "${BACKEND_IMAGE}"
+            echo "Pull complete."
+
+      # ── Write env file and swap containers ──────────────────────────────────
+      - name: Write env file and restart containers
+        uses: appleboy/ssh-action@v1.0.3
+        env:
           RAILS_MASTER_KEY: ${{ secrets.RAILS_MASTER_KEY }}
           BACKEND_IMAGE: ${{ env.REGISTRY }}/${{ env.IMAGE_NAME }}:dev
           POSTGRES_USER: ${{ secrets.POSTGRES_USER }}
@@ -170,74 +159,70 @@ jobs:
           POSTGRES_CABLE_DB: ${{ secrets.POSTGRES_CABLE_DB }}
           TMDB_API_KEY: ${{ secrets.TMDB_API_KEY }}
           CORS_ALLOWED_ORIGINS: ${{ secrets.CORS_ALLOWED_ORIGINS }}
+          BACKEND_DOMAIN: ${{ secrets.BACKEND_DOMAIN }}
         with:
           host: ${{ secrets.ORACLE_VM_HOST }}
           username: ${{ secrets.ORACLE_VM_USER }}
           key: ${{ secrets.ORACLE_VM_SSH_KEY }}
-          envs: GH_TOKEN,GH_ACTOR,RAILS_MASTER_KEY,BACKEND_IMAGE,POSTGRES_USER,POSTGRES_PASSWORD,POSTGRES_DB,POSTGRES_CACHE_DB,POSTGRES_QUEUE_DB,POSTGRES_CABLE_DB,TMDB_API_KEY,CORS_ALLOWED_ORIGINS
-          command_timeout: 30m
+          envs: RAILS_MASTER_KEY,BACKEND_IMAGE,POSTGRES_USER,POSTGRES_PASSWORD,POSTGRES_DB,POSTGRES_CACHE_DB,POSTGRES_QUEUE_DB,POSTGRES_CABLE_DB,TMDB_API_KEY,CORS_ALLOWED_ORIGINS,BACKEND_DOMAIN
+          # Only swap + migrate + health-check; pull already finished above
+          command_timeout: 6m
           script: |
             set -euo pipefail
+
             show_diagnostics() {
-              echo "▶ Deployment diagnostics..."
-              cd /opt/multimediary || return 0
-              docker compose --env-file .env.production -f docker-compose.prod.yml ps || true
-              docker compose --env-file .env.production -f docker-compose.prod.yml logs --tail=200 backend || true
-              docker compose --env-file .env.production -f docker-compose.prod.yml logs --tail=100 db || true
+              echo "=== DEPLOYMENT FAILED — diagnostics ==="
+              cd /opt/multimediary || return
+              docker compose --env-file .env.production -f docker-compose.prod.yml ps      || true
+              docker compose --env-file .env.production -f docker-compose.prod.yml logs --tail=100 backend || true
+              docker compose --env-file .env.production -f docker-compose.prod.yml logs --tail=50  db      || true
             }
             trap show_diagnostics ERR
 
-            echo "▶ Logging in to GHCR..."
-            echo "${GH_TOKEN}" | docker login ghcr.io -u "${GH_ACTOR}" --password-stdin
-
-            echo "▶ Pulling latest image: ${BACKEND_IMAGE}"
-            docker pull "${BACKEND_IMAGE}"
-
             cd /opt/multimediary
 
-            echo "▶ Writing .env.production from GitHub Secrets..."
+            echo "Writing .env.production..."
             umask 077
             {
-              printf '%s\n' "RAILS_MASTER_KEY=${RAILS_MASTER_KEY}"
-              printf '%s\n' "POSTGRES_USER=${POSTGRES_USER}"
-              printf '%s\n' "POSTGRES_PASSWORD=${POSTGRES_PASSWORD}"
-              printf '%s\n' "POSTGRES_DB=${POSTGRES_DB}"
-              printf '%s\n' "POSTGRES_CACHE_DB=${POSTGRES_CACHE_DB}"
-              printf '%s\n' "POSTGRES_QUEUE_DB=${POSTGRES_QUEUE_DB}"
-              printf '%s\n' "POSTGRES_CABLE_DB=${POSTGRES_CABLE_DB}"
-              printf '%s\n' "TMDB_API_KEY=${TMDB_API_KEY}"
-              printf '%s\n' "CORS_ALLOWED_ORIGINS=${CORS_ALLOWED_ORIGINS}"
+              printf 'RAILS_MASTER_KEY=%s\n'    "${RAILS_MASTER_KEY}"
+              printf 'POSTGRES_USER=%s\n'       "${POSTGRES_USER}"
+              printf 'POSTGRES_PASSWORD=%s\n'   "${POSTGRES_PASSWORD}"
+              printf 'POSTGRES_DB=%s\n'         "${POSTGRES_DB}"
+              printf 'POSTGRES_CACHE_DB=%s\n'   "${POSTGRES_CACHE_DB}"
+              printf 'POSTGRES_QUEUE_DB=%s\n'   "${POSTGRES_QUEUE_DB}"
+              printf 'POSTGRES_CABLE_DB=%s\n'   "${POSTGRES_CABLE_DB}"
+              printf 'TMDB_API_KEY=%s\n'        "${TMDB_API_KEY}"
+              printf 'CORS_ALLOWED_ORIGINS=%s\n' "${CORS_ALLOWED_ORIGINS}"
+              printf 'BACKEND_DOMAIN=%s\n'      "${BACKEND_DOMAIN}"
             } > .env.production
 
-            echo "▶ Starting/restarting containers..."
-            # BACKEND_IMAGE is consumed by docker-compose.prod.yml via ${BACKEND_IMAGE}
             export BACKEND_IMAGE="${BACKEND_IMAGE}"
+
+            echo "Validating compose config..."
             docker compose --env-file .env.production -f docker-compose.prod.yml config --quiet
 
-            echo "▶ Removing existing backend container to free port 80..."
-            docker compose --env-file .env.production -f docker-compose.prod.yml stop backend || true
-            docker compose --env-file .env.production -f docker-compose.prod.yml rm -f backend || true
-
-            echo "▶ Checking host port 80..."
-            conflicting_container_ids=""
-            for container_id in $(docker ps --filter publish=80 -q); do
-              conflicting_container_ids="${conflicting_container_ids} ${container_id}"
-            done
-
-            if [ -n "${conflicting_container_ids}" ]; then
-              echo "::error title=Port 80 is already allocated::Another container is publishing port 80. Stop it or change the backend host port, then rerun the deploy."
-              docker ps --format 'table {{.ID}}\t{{.Names}}\t{{.Ports}}'
-              sudo ss -ltnp 'sport = :80' || true
-              exit 1
-            fi
-
+            echo "Restarting containers..."
             docker compose --env-file .env.production -f docker-compose.prod.yml up -d --remove-orphans
 
-            echo "▶ Waiting for backend to be healthy..."
-            sleep 10
-            docker compose --env-file .env.production -f docker-compose.prod.yml ps
+            echo "Waiting for backend to pass health check..."
+            for i in $(seq 1 24); do
+              status=$(docker compose --env-file .env.production -f docker-compose.prod.yml \
+                exec -T backend curl -sf http://localhost/up 2>/dev/null | \
+                python3 -c "import sys,json; d=json.load(sys.stdin); print(d.get('status',''))" 2>/dev/null || true)
+              if [ "${status}" = "ok" ]; then
+                echo "Health check passed after $((i * 5))s."
+                break
+              fi
+              if [ "${i}" -eq 24 ]; then
+                echo "Health check did not pass within 120s."
+                exit 1
+              fi
+              echo "  attempt ${i}/24 — waiting 5s..."
+              sleep 5
+            done
 
-            echo "▶ Pruning unused images..."
+            echo "Pruning unused images..."
             docker image prune -f
 
-            echo "✅ Deployment complete!"
+            docker compose --env-file .env.production -f docker-compose.prod.yml ps
+            echo "Deployment complete."

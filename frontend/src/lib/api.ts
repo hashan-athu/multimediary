@@ -1,5 +1,5 @@
 import axios from "axios";
-import { MovieResponse, MovieParams, MovieDetail, Category, Genre, Actor, Director } from "@/types";
+import { MovieResponse, MovieParams, MovieDetail, Category, Genre, Actor, Director, Disk } from "@/types";
 
 const BASE_URL = process.env.NEXT_PUBLIC_API_URL || "http://localhost:3001";
 
@@ -78,8 +78,22 @@ export const apiClient = {
       const { data } = await api.get("/directors", { params });
       return data;
     },
-    get: async (id: number): Promise<{ director: Director & { movies: import("@/types").MovieList[] } }> => {
+    get: async (id: number): Promise<{ director: Director & { movie_count: number }; movies: import("@/types").MovieList[]; meta: import("@/types").PaginationMeta }> => {
       const { data } = await api.get(`/directors/${id}`);
+      return data;
+    },
+  },
+
+  disks: {
+    list: async (params?: { page?: number; per_page?: number }): Promise<{
+      disks: Disk[];
+      meta: import("@/types").PaginationMeta;
+    }> => {
+      const { data } = await api.get("/disks", { params });
+      return data;
+    },
+    get: async (id: number): Promise<{ disk: Omit<Disk, "movies">; movies: import("@/types").MovieList[] }> => {
+      const { data } = await api.get(`/disks/${id}`);
       return data;
     },
   },

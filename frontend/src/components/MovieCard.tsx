@@ -1,10 +1,11 @@
 "use client";
 
 import { Movie } from "@/types";
-import { Play, Star } from "lucide-react";
+import { Play } from "lucide-react";
 import { motion } from "framer-motion";
 import { cn } from "@/lib/utils";
 import { useRouter } from "next/navigation";
+import Link from "next/link";
 import {
   Tooltip,
   TooltipTrigger,
@@ -45,12 +46,14 @@ export default function MovieCard({ movie, className }: MovieCardProps) {
               {movie.genres
                 .slice(0, 2)
                 .map((genre: { id: number; name: string }) => (
-                  <span
+                  <Link
                     key={genre.id}
-                    className="rounded-full border border-white/10 bg-white/8 px-3 py-1.5 text-xs font-bold uppercase tracking-[0.16em] text-text-dim backdrop-blur-md"
+                    href={`/movies?genre_id=${genre.id}`}
+                    onClick={(e) => e.stopPropagation()}
+                    className="rounded-full border border-white/10 bg-white/8 px-3 py-1.5 text-xs font-bold uppercase tracking-[0.16em] text-text-dim backdrop-blur-md hover:border-white/30 hover:text-white transition-colors"
                   >
                     {genre.name}
-                  </span>
+                  </Link>
                 ))}
             </div>
 
@@ -72,8 +75,24 @@ export default function MovieCard({ movie, className }: MovieCardProps) {
         <h3 className="text-white group-hover:text-brand-primary transition-colors font-semibold leading-tight line-clamp-3">
           {movie.name}
         </h3>
-        <p className="text-text-dim group-hover:text-white transition-colors text-xs font-semibold mt-1">
-          {movie.year} • {movie.category.name}
+        <p className="text-text-dim text-xs font-semibold mt-1 flex items-center gap-1 flex-wrap">
+          {movie.year && (
+            <Link
+              href={`/movies?year=${movie.year}`}
+              onClick={(e) => e.stopPropagation()}
+              className="hover:text-accent transition-colors"
+            >
+              {movie.year}
+            </Link>
+          )}
+          {movie.year && <span>•</span>}
+          <Link
+            href={`/movies?category_id=${movie.category.id}`}
+            onClick={(e) => e.stopPropagation()}
+            className="hover:text-brand-secondary transition-colors"
+          >
+            {movie.category.name}
+          </Link>
         </p>
       </div>
     </motion.div>

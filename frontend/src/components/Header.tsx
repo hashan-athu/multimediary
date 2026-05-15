@@ -6,6 +6,11 @@ import { Search, Menu, X, Film } from "lucide-react";
 import { cn } from "@/lib/utils";
 import { motion, AnimatePresence } from "framer-motion";
 import { useRouter } from "next/navigation";
+import Image from "next/image";
+
+// Image imports
+import LogoFull from "@/assets/images/logo/multimediary-logo-desktop.svg";
+import LogoSmall from "@/assets/images/logo/logo-md.png";
 
 export default function Header() {
   const router = useRouter();
@@ -47,18 +52,26 @@ export default function Header() {
         "fixed top-0 left-0 right-0 z-50 transition-all duration-500 px-6 md:px-12 py-4",
         isScrolled
           ? "bg-bg-deep/80 backdrop-blur-xl border-b border-white/5 py-3"
-          : "bg-gradient-to-b from-bg-deep/80 to-transparent"
+          : "bg-linear-to-b from-bg-deep/80 to-transparent",
       )}
     >
       <div className="max-w-7xl mx-auto flex items-center justify-between">
         <div className="flex items-center gap-10">
           <Link href="/" className="flex items-center gap-2 group">
-            <div className="w-10 h-10 bg-brand-primary rounded-xl flex items-center justify-center shadow-[0_0_15px_rgba(229,9,20,0.3)] group-hover:scale-110 transition-transform">
-              <Film className="text-white" size={22} />
-            </div>
-            <span className="font-outfit text-xl font-bold tracking-tight text-white hidden sm:block">
-              MULTI<span className="text-brand-primary">MEDIARY</span>
-            </span>
+            <Image
+              src={LogoSmall}
+              alt="Multimediary logo"
+              className="h-10 w-auto block md:hidden"
+              width={40}
+              height={40}
+            />
+            <Image
+              src={LogoFull}
+              alt="Multimediary logo"
+              className="h-8 w-auto hidden md:block"
+              width={386}
+              height={40}
+            />
           </Link>
 
           <nav className="hidden lg:flex items-center gap-8">
@@ -97,7 +110,10 @@ export default function Header() {
                 />
                 <button
                   type="button"
-                  onClick={() => { setIsSearchOpen(false); setSearchQuery(""); }}
+                  onClick={() => {
+                    setIsSearchOpen(false);
+                    setSearchQuery("");
+                  }}
                   className="absolute right-3 top-1/2 -translate-y-1/2 text-text-dim hover:text-white"
                 >
                   <X size={16} />

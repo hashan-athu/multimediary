@@ -8,7 +8,11 @@ module Api
         def index
           @movies = Movie.includes(:category, :disk, :genres, :qualities)
           @movies = @movies.ransack(ransack_params).result if ransack_params.present?
-          @movies = apply_sort(@movies, default_column: :name, default_direction: :asc)
+          @movies = if params[:sort].present?
+            apply_sort(@movies, default_column: :year, default_direction: :desc)
+          else
+            @movies.order(year: :desc, name: :asc)
+          end
           @movies = paginate(@movies)
 
           render json: {
@@ -21,7 +25,7 @@ module Api
         def show
           @movie = Movie.includes(
             :category, :genres, :qualities, :director,
-            :actors, :disk, { ratings: :reviewer }
+            :actors, :disk, { movie_ratings: :reviewer }
           ).find(params[:id])
 
           render json: {

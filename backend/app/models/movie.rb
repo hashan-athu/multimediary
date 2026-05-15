@@ -1,6 +1,6 @@
 class Movie < ApplicationRecord
   belongs_to :category
-  belongs_to :director
+  belongs_to :director, optional: true
   belongs_to :disk
 
   validates :name, presence: true, length: { maximum: 255 }
@@ -15,6 +15,7 @@ class Movie < ApplicationRecord
   has_and_belongs_to_many :genres
   has_and_belongs_to_many :ratings
   has_and_belongs_to_many :qualities
+  has_many :movie_ratings, class_name: "Rating", foreign_key: :movie_id, inverse_of: :movie
 
   def self.ransackable_attributes(_auth_object = nil)
     %w[name year language country description story tagline poster_url backdrop_url tmdb_id category_id director_id disk_id]

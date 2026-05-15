@@ -129,9 +129,12 @@ export default function HeroCarousel({ movies }: HeroCarouselProps) {
                           <Sparkles size={12} />
                           Featured
                         </span>
-                        <span className="rounded-full border border-brand-secondary/20 bg-brand-secondary/10 px-3 py-1.5 text-brand-secondary backdrop-blur-md md:border-0 md:bg-transparent md:px-0 md:py-0">
+                        <Link
+                          href={`/movies?category_id=${movie.category.id}`}
+                          className="rounded-full border border-brand-secondary/20 bg-brand-secondary/10 px-3 py-1.5 text-brand-secondary backdrop-blur-md hover:bg-brand-secondary/20 transition-colors md:border-0 md:bg-transparent md:px-0 md:py-0 md:hover:text-brand-secondary/80"
+                        >
                           {movie.category.name}
-                        </span>
+                        </Link>
                       </div>
 
                       <p className="text-[clamp(2.45rem,12vw,4.2rem)] font-bold leading-[0.95] text-white md:text-[clamp(4.5rem,9vw,7.75rem)] md:leading-[0.9] lg:text-[clamp(4.5rem,7vw,7.25rem)] xl:text-[clamp(5rem,6.2vw,8rem)]">
@@ -140,10 +143,13 @@ export default function HeroCarousel({ movies }: HeroCarouselProps) {
 
                       <div className="flex flex-wrap items-center gap-2.5 text-sm font-bold text-text-dim md:gap-6 md:text-base">
                         {movie.year && (
-                          <div className="flex items-center gap-1.5 rounded-full border border-white/10 bg-white/8 px-3 py-1.5 backdrop-blur-md md:border-0 md:bg-transparent md:px-0 md:py-0">
+                          <Link
+                            href={`/movies?year=${movie.year}`}
+                            className="flex items-center gap-1.5 rounded-full border border-white/10 bg-white/8 px-3 py-1.5 backdrop-blur-md hover:border-accent/40 hover:text-accent transition-colors md:border-0 md:bg-transparent md:px-0 md:py-0"
+                          >
                             <Calendar size={16} className="text-accent md:size-[18px]" />
                             <span>{movie.year}</span>
-                          </div>
+                          </Link>
                         )}
                         {movie.runtime && (
                           <div className="flex items-center gap-1.5 rounded-full border border-white/10 bg-white/8 px-3 py-1.5 backdrop-blur-md md:border-0 md:bg-transparent md:px-0 md:py-0">
@@ -152,12 +158,13 @@ export default function HeroCarousel({ movies }: HeroCarouselProps) {
                           </div>
                         )}
                         {movie.genres.slice(0, 2).map((g) => (
-                          <span
+                          <Link
                             key={g.id}
-                            className="rounded-full border border-white/10 bg-white/8 px-3 py-1.5 text-xs font-black uppercase tracking-[0.16em] text-text-dim backdrop-blur-md md:border-0 md:bg-transparent md:px-0 md:py-0 md:text-sm"
+                            href={`/movies?genre_id=${g.id}`}
+                            className="rounded-full border border-white/10 bg-white/8 px-3 py-1.5 text-xs font-black uppercase tracking-[0.16em] text-text-dim backdrop-blur-md hover:border-white/30 hover:text-white transition-colors md:border-0 md:bg-transparent md:px-0 md:py-0 md:text-sm"
                           >
                             {g.name}
-                          </span>
+                          </Link>
                         ))}
                       </div>
 

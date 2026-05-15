@@ -118,13 +118,20 @@ export default function MovieDetailPage() {
 
             {/* Category badge */}
             <div className="flex items-center gap-3 flex-wrap">
-              <span className="bg-brand-primary/20 text-brand-primary px-3 py-1 rounded-md border border-brand-primary/20 text-sm font-bold">
+              <Link
+                href={`/movies?category_id=${movie.category.id}`}
+                className="bg-brand-primary/20 text-brand-primary px-3 py-1 rounded-md border border-brand-primary/20 text-sm font-bold hover:bg-brand-primary/30 transition-colors"
+              >
                 {movie.category.name}
-              </span>
+              </Link>
               {movie.genres.map((g) => (
-                <span key={g.id} className="text-xs font-bold text-text-dim uppercase tracking-wider border border-white/10 px-2 py-1 rounded-md">
+                <Link
+                  key={g.id}
+                  href={`/movies?genre_id=${g.id}`}
+                  className="text-xs font-bold text-text-dim uppercase tracking-wider border border-white/10 px-2 py-1 rounded-md hover:border-white/30 hover:text-white transition-colors"
+                >
                   {g.name}
-                </span>
+                </Link>
               ))}
             </div>
 
@@ -139,10 +146,13 @@ export default function MovieDetailPage() {
             {/* Meta row */}
             <div className="flex flex-wrap items-center gap-6 text-text-dim font-semibold">
               {movie.year && (
-                <div className="flex items-center gap-1.5">
+                <Link
+                  href={`/movies?year=${movie.year}`}
+                  className="flex items-center gap-1.5 hover:text-accent transition-colors"
+                >
                   <Calendar size={18} className="text-accent" />
                   <span>{movie.year}</span>
-                </div>
+                </Link>
               )}
               {movie.runtime && (
                 <div className="flex items-center gap-1.5">
@@ -209,7 +219,10 @@ export default function MovieDetailPage() {
                   <div className="w-1.5 h-8 bg-brand-primary rounded-full shadow-[0_0_10px_rgba(229,9,20,0.5)]" />
                   <h2 className="text-2xl font-outfit font-black text-white uppercase">Director</h2>
                 </div>
-                <div className="flex items-center gap-4 glass-panel rounded-2xl p-4 w-fit">
+                <Link
+                  href={`/directors/${movie.director.id}`}
+                  className="flex items-center gap-4 glass-panel rounded-2xl p-4 w-fit hover:border-brand-primary/30 transition-all group"
+                >
                   {movie.director.image_url ? (
                     <img
                       src={movie.director.image_url}
@@ -222,12 +235,12 @@ export default function MovieDetailPage() {
                     </div>
                   )}
                   <div>
-                    <p className="text-white font-bold text-lg">{movie.director.full_name}</p>
+                    <p className="text-white font-bold text-lg group-hover:text-brand-primary transition-colors">{movie.director.full_name}</p>
                     {movie.director.nationality && (
                       <p className="text-text-dim text-sm">{movie.director.nationality}</p>
                     )}
                   </div>
-                </div>
+                </Link>
               </div>
             )}
 
@@ -318,7 +331,12 @@ export default function MovieDetailPage() {
           <div className="mt-16 glass-panel rounded-2xl p-6 flex flex-wrap gap-8">
             <div>
               <p className="text-xs font-black uppercase tracking-widest text-text-dim mb-1">Disk</p>
-              <p className="text-white font-semibold">{movie.disk.name}</p>
+              <Link
+                href={`/disks/${movie.disk.id}`}
+                className="text-white font-semibold hover:text-brand-secondary transition-colors"
+              >
+                {movie.disk.name}
+              </Link>
             </div>
             <div>
               <p className="text-xs font-black uppercase tracking-widest text-text-dim mb-1">Storage</p>

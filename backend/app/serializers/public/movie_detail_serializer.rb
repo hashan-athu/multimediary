@@ -14,7 +14,9 @@ module Public
     association :category,  blueprint: Public::CategorySerializer
     association :genres,    blueprint: Public::GenreSerializer
     association :qualities, blueprint: Public::QualitySerializer
-    association :ratings,   blueprint: Public::RatingSerializer
+    field :ratings do |movie|
+      Public::RatingSerializer.render_as_hash(movie.movie_ratings.to_a)
+    end
     association :director,  blueprint: Public::DirectorSerializer
     association :actors,    blueprint: Public::ActorSerializer
 
@@ -29,7 +31,7 @@ module Public
     end
 
     field :average_rating do |movie|
-      ratings = movie.ratings.to_a
+      ratings = movie.movie_ratings.to_a
       next nil if ratings.empty?
       normalised = ratings.map { |r| (r.rating_value.to_f / r.rating_out_of.to_f) * 10 }
       (normalised.sum / normalised.size).round(1)

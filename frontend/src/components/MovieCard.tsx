@@ -2,6 +2,7 @@
 
 import { Movie } from "@/types";
 import { Play } from "lucide-react";
+import posterPlaceholder from "@/assets/images/placeholders/poster-placeholder.jpg";
 import { motion } from "framer-motion";
 import { cn } from "@/lib/utils";
 import { useRouter } from "next/navigation";
@@ -29,7 +30,7 @@ export default function MovieCard({ movie, className }: MovieCardProps) {
     >
       <div className="relative aspect-2/3 overflow-hidden ">
         <Image
-          src={movie.poster_url || "/placeholder-poster.jpg"}
+          src={movie.poster_url || posterPlaceholder}
           alt={movie.name}
           className="w-full h-full object-cover transition-transform duration-700 group-hover:scale-105"
           width={300}

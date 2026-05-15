@@ -22,6 +22,8 @@ import {
 } from "@/components/ui/tooltip";
 import { PublicEmptyState, emptyIcons } from "@/components/PublicStates";
 import Image from "next/image";
+import bannerPlaceholder from "@/assets/images/placeholders/banner-placeholder.avif";
+import posterPlaceholder from "@/assets/images/placeholders/poster-placeholder.jpg";
 
 interface HeroCarouselProps {
   movies: Movie[];
@@ -101,7 +103,7 @@ export default function HeroCarousel({ movies }: HeroCarouselProps) {
                   src={
                     movie.backdrop_url ||
                     movie.poster_url ||
-                    "/assets/images/placeholders/hero-carousel-placeholder.webp"
+                    bannerPlaceholder
                   }
                   alt={movie.name}
                   className="w-full h-full object-cover object-center scale-105"

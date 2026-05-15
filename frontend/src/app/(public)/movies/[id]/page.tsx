@@ -10,6 +10,8 @@ import {
   Play, Calendar, Clock, Globe, Star,
   ChevronLeft, User, Film,
 } from "lucide-react";
+import bannerPlaceholder from "@/assets/images/placeholders/banner-placeholder.avif";
+import posterPlaceholder from "@/assets/images/placeholders/poster-placeholder.jpg";
 import Link from "next/link";
 import { motion } from "framer-motion";
 
@@ -59,7 +61,7 @@ export default function MovieDetailPage() {
     movie.ratings?.length
       ? movie.ratings.reduce((sum, r) => sum + (r.rating_value / r.rating_out_of) * 10, 0) / movie.ratings.length
       : null;
-  const heroImage = movie.backdrop_url || movie.poster_url;
+  const heroImage = movie.backdrop_url || movie.poster_url || bannerPlaceholder.src;
 
   return (
     <main className="min-h-screen bg-bg-deep flex flex-col">
@@ -67,15 +69,11 @@ export default function MovieDetailPage() {
 
       {/* Hero backdrop */}
       <div className="relative h-[60vh] w-full overflow-hidden">
-        {heroImage ? (
-          <img
-            src={heroImage}
-            alt={movie.name}
-            className="w-full h-full object-cover object-center scale-105"
-          />
-        ) : (
-          <div className="w-full h-full bg-bg-surface" />
-        )}
+        <img
+          src={heroImage}
+          alt={movie.name}
+          className="w-full h-full object-cover object-center scale-105"
+        />
         <div className="absolute inset-0 bg-gradient-to-r from-bg-deep via-bg-deep/60 to-transparent" />
         <div className="absolute inset-0 bg-gradient-to-t from-bg-deep via-transparent to-bg-deep/20" />
       </div>
@@ -91,17 +89,11 @@ export default function MovieDetailPage() {
           {/* Poster */}
           <div className="hidden md:block">
             <div className="aspect-[2/3] rounded-2xl overflow-hidden shadow-2xl border border-white/10">
-              {movie.poster_url ? (
-                <img
-                  src={movie.poster_url}
-                  alt={movie.name}
-                  className="w-full h-full object-cover"
-                />
-              ) : (
-                <div className="w-full h-full bg-bg-surface flex items-center justify-center">
-                  <Film size={48} className="text-text-muted" />
-                </div>
-              )}
+              <img
+                src={movie.poster_url || posterPlaceholder.src}
+                alt={movie.name}
+                className="w-full h-full object-cover"
+              />
             </div>
           </div>
 

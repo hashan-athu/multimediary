@@ -19,6 +19,8 @@ module Api
               {
                 id:          cat.id,
                 name:        cat.name,
+                description: cat.description,
+                image_url:   cat.image_url,
                 movie_count: cat.movie_count.to_i
               }
             end

@@ -45,7 +45,7 @@ module Api
         end
 
         def category_params
-          params.require(:category).permit(:name)
+          params.require(:category).permit(:name, :description, :image_url)
         end
 
         def check_movies_before_destroy

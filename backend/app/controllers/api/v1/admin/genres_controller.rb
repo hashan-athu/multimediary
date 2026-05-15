@@ -45,7 +45,7 @@ module Api
         end
 
         def genre_params
-          params.require(:genre).permit(:name, :description)
+          params.require(:genre).permit(:name, :description, :image_url)
         end
 
         def check_movies_before_destroy

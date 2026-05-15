@@ -3,6 +3,6 @@
 module Public
   class GenreSerializer < Blueprinter::Base
     identifier :id
-    fields :name, :description
+    fields :name, :description, :image_url
   end
 end

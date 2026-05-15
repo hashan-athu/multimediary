@@ -7,12 +7,15 @@ import HeroCarousel from "@/components/HeroCarousel";
 import SearchFilter from "@/components/SearchFilter";
 import MovieSection from "@/components/MovieSection";
 import Footer from "@/components/Footer";
-import { Sparkles } from "lucide-react";
+import { Sparkles, ChevronRight } from "lucide-react";
 import { useState } from "react";
 import { MovieParams } from "@/types";
 import Link from "next/link";
 import {
   GenreGridSkeleton,
+  GenreBentoGrid,
+  CategoryBentoSkeleton,
+  CategoryBentoGrid,
   HomeSkeleton,
   PublicEmptyState,
   emptyIcons,
@@ -32,8 +35,15 @@ export default function Home() {
     staleTime: 5 * 60 * 1000,
   });
 
+  const { data: categoryData, isLoading: categoriesLoading } = useQuery({
+    queryKey: ["public-categories"],
+    queryFn: () => apiClient.categories.list(),
+    staleTime: 5 * 60 * 1000,
+  });
+
   const allMovies = moviesData?.movies || [];
   const genres = genreData?.genres || [];
+  const categories = categoryData?.categories || [];
   const featuredMovies = allMovies.slice(0, 5);
   const trendingMovies = [...allMovies].reverse().slice(0, 12);
 
@@ -77,13 +87,22 @@ export default function Home() {
 
               {!hasActiveFilters && (
                 <>
-                  {/* Genre Grid */}
+                  {/* Genre Bento Grid */}
                   <section className="space-y-8">
-                    <div className="flex items-center gap-4">
-                      <div className="w-1.5 h-8 bg-brand-secondary rounded-full shadow-[0_0_10px_rgba(0,209,255,0.5)]" />
-                      <h2 className="text-3xl font-outfit font-black tracking-tight text-white uppercase">
-                        Browse by Genre
-                      </h2>
+                    <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-4">
+                      <div className="flex items-center gap-4">
+                        <div className="w-1.5 h-8 bg-brand-secondary rounded-full shadow-[0_0_10px_rgba(0,209,255,0.5)]" />
+                        <h2 className="text-3xl font-outfit font-black tracking-tight text-white uppercase">
+                          Browse by Genre
+                        </h2>
+                      </div>
+                      <Link
+                        href="/genres"
+                        className="flex items-center gap-2 text-sm font-bold text-text-dim hover:text-brand-secondary transition-colors group ml-6 sm:ml-0"
+                      >
+                        VIEW ALL
+                        <ChevronRight size={16} className="group-hover:translate-x-1 transition-transform" />
+                      </Link>
                     </div>
                     {genresLoading ? (
                       <GenreGridSkeleton />
@@ -94,27 +113,37 @@ export default function Home() {
                         description="Genre shortcuts will appear here after genres are added or imported from TMDB."
                       />
                     ) : (
-                      <div className="grid grid-cols-2 md:grid-cols-4 lg:grid-cols-6 gap-4">
-                        {genres.slice(0, 12).map((genre) => (
-                          <Link
-                            key={genre.id}
-                            href={`/movies?genre_id=${genre.id}`}
-                            className="group relative h-32 rounded-2xl overflow-hidden glass-panel hover:border-brand-secondary/50 transition-all flex items-center justify-center"
-                          >
-                            <div className="absolute inset-0 bg-gradient-to-br from-brand-secondary/10 to-transparent group-hover:from-brand-secondary/20 transition-all" />
-                            <div className="relative text-center px-2">
-                              <span className="font-bold text-lg text-white group-hover:scale-110 transition-transform block">
-                                {genre.name}
-                              </span>
-                              {genre.movie_count !== undefined && (
-                                <span className="text-[10px] text-text-dim mt-1 block">
-                                  {genre.movie_count} movies
-                                </span>
-                              )}
-                            </div>
-                          </Link>
-                        ))}
+                      <GenreBentoGrid genres={genres} />
+                    )}
+                  </section>
+
+                  {/* Category Bento Grid */}
+                  <section className="space-y-8">
+                    <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-4">
+                      <div className="flex items-center gap-4">
+                        <div className="w-1.5 h-8 bg-brand-primary rounded-full shadow-[0_0_10px_rgba(229,9,20,0.5)]" />
+                        <h2 className="text-3xl font-outfit font-black tracking-tight text-white uppercase">
+                          Browse by Category
+                        </h2>
                       </div>
+                      <Link
+                        href="/categories"
+                        className="flex items-center gap-2 text-sm font-bold text-text-dim hover:text-brand-primary transition-colors group ml-6 sm:ml-0"
+                      >
+                        VIEW ALL
+                        <ChevronRight size={16} className="group-hover:translate-x-1 transition-transform" />
+                      </Link>
+                    </div>
+                    {categoriesLoading ? (
+                      <CategoryBentoSkeleton />
+                    ) : categories.length === 0 ? (
+                      <PublicEmptyState
+                        icon={emptyIcons.layers}
+                        title="No categories yet"
+                        description="Category shortcuts will appear here after categories are added in admin."
+                      />
+                    ) : (
+                      <CategoryBentoGrid categories={categories} />
                     )}
                   </section>
 

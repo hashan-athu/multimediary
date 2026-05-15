@@ -3,6 +3,8 @@
 import { Film, Layers, Search, Users, LucideIcon } from "lucide-react";
 import { cn } from "@/lib/utils";
 import type { ReactNode } from "react";
+import Link from "next/link";
+import type { Genre, Category } from "@/types";
 
 function SkeletonBlock({ className }: { className?: string }) {
   return <div className={cn("animate-pulse rounded-xl bg-white/10", className)} />;
@@ -63,26 +65,224 @@ export function PeopleGridSkeleton({ count = 12 }: { count?: number }) {
   );
 }
 
-export function CategoryGridSkeleton({ count = 8 }: { count?: number }) {
+// Category bento: 4-col grid, up to 6 items
+// 5 items → 2 clean rows; 6 items → 2 rows + full-width banner
+const CATEGORY_BENTO_CLASSES = [
+  "col-span-1 h-44 md:col-span-2 md:row-span-2 md:h-auto",
+  "col-span-1 h-44 md:col-span-1 md:row-span-1 md:h-auto",
+  "col-span-1 h-44 md:col-span-1 md:row-span-1 md:h-auto",
+  "col-span-1 h-44 md:col-span-1 md:row-span-1 md:h-auto",
+  "col-span-1 h-44 md:col-span-1 md:row-span-1 md:h-auto",
+  "col-span-2 h-44 md:col-span-4 md:row-span-1 md:h-auto",
+];
+
+export const CATEGORY_GRADIENTS = [
+  "linear-gradient(135deg, #8B0A02, #2A0000)",
+  "linear-gradient(135deg, #002B6B, #00050D)",
+  "linear-gradient(135deg, #5C2B00, #1A0800)",
+  "linear-gradient(135deg, #2B004D, #070010)",
+  "linear-gradient(135deg, #003D28, #000A05)",
+  "linear-gradient(135deg, #4D1A00, #0F0500)",
+  "linear-gradient(135deg, #1A004D, #050010)",
+];
+
+export function CategoryBentoSkeleton() {
   return (
-    <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-6">
-      {Array.from({ length: count }, (_, i) => (
-        <div key={i} className="glass-panel rounded-3xl p-8 space-y-5">
-          <SkeletonBlock className="w-14 h-14 rounded-2xl" />
-          <SkeletonBlock className="h-5 w-2/3" />
-          <SkeletonBlock className="h-4 w-1/2" />
-        </div>
+    <div className="grid grid-cols-2 md:grid-cols-4 gap-4 md:[grid-auto-rows:160px]">
+      {CATEGORY_BENTO_CLASSES.map((cls, i) => (
+        <SkeletonBlock key={i} className={cn("rounded-2xl", cls)} />
       ))}
     </div>
   );
 }
 
-export function GenreGridSkeleton({ count = 12 }: { count?: number }) {
+export function CategoryBentoGrid({ categories }: { categories: (Category & { movie_count?: number })[] }) {
+  const capped = categories.slice(0, 6);
   return (
-    <div className="grid grid-cols-2 md:grid-cols-4 lg:grid-cols-6 gap-4">
+    <div className="grid grid-cols-2 md:grid-cols-4 gap-4 md:[grid-auto-rows:160px]">
+      {capped.map((category, i) => {
+        const sizeClass = CATEGORY_BENTO_CLASSES[i];
+        const hasImage = !!category.image_url;
+        const gradient = CATEGORY_GRADIENTS[i % CATEGORY_GRADIENTS.length];
+        const isHero = i === 0;
+        const isBanner = i === 5;
+
+        return (
+          <Link
+            key={category.id}
+            href={`/movies?category_id=${category.id}`}
+            className={cn(
+              "group relative rounded-2xl overflow-hidden transition-all duration-300",
+              "hover:scale-[1.02] hover:shadow-2xl hover:shadow-black/60",
+              sizeClass
+            )}
+          >
+            <div className="absolute inset-0" style={{ background: gradient }} />
+
+            {hasImage && (
+              // eslint-disable-next-line @next/next/no-img-element
+              <img
+                src={category.image_url}
+                alt={category.name}
+                className="absolute inset-0 w-full h-full object-cover transition-transform duration-500 group-hover:scale-110"
+              />
+            )}
+
+            <div className="absolute inset-0 bg-gradient-to-t from-black/85 via-black/25 to-black/5 transition-all duration-300 group-hover:from-black/90 group-hover:via-black/45" />
+
+            <div className={cn(
+              "absolute inset-0 flex flex-col p-4",
+              isBanner ? "items-center justify-center text-center" : "justify-end"
+            )}>
+              {category.description && (
+                <p className={cn(
+                  "text-white/75 leading-snug mb-2",
+                  "opacity-0 translate-y-2 transition-all duration-300",
+                  "group-hover:opacity-100 group-hover:translate-y-0",
+                  isHero ? "text-sm line-clamp-3" : "text-xs line-clamp-2"
+                )}>
+                  {category.description}
+                </p>
+              )}
+
+              <span className={cn(
+                "font-outfit font-black text-white drop-shadow-lg leading-tight",
+                isHero ? "text-2xl md:text-3xl" : isBanner ? "text-xl md:text-2xl" : "text-base md:text-lg"
+              )}>
+                {category.name}
+              </span>
+
+              {category.movie_count !== undefined && (
+                <span className="text-[10px] text-white/50 mt-0.5 font-medium">
+                  {category.movie_count} {category.movie_count === 1 ? "movie" : "movies"}
+                </span>
+              )}
+            </div>
+          </Link>
+        );
+      })}
+    </div>
+  );
+}
+
+export function CategoryGridSkeleton({ count = 8 }: { count?: number }) {
+  return (
+    <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-5 gap-4">
       {Array.from({ length: count }, (_, i) => (
-        <SkeletonBlock key={i} className="h-32 rounded-2xl" />
+        <SkeletonBlock key={i} className="h-52 rounded-2xl" />
       ))}
+    </div>
+  );
+}
+
+// 10-item bento layout fills a 4-col grid perfectly: rows trace to 4×4=16 cells
+// Row 1: [0:2×2][1][2]  Row 2: [0:2×2][3:1×2][4]  Row 3: [5:2×1][3:cont][6]  Row 4: [7][8][9:2×1]
+const BENTO_CLASSES = [
+  "col-span-1 h-44 md:col-span-2 md:row-span-2 md:h-auto",
+  "col-span-1 h-44 md:col-span-1 md:row-span-1 md:h-auto",
+  "col-span-1 h-44 md:col-span-1 md:row-span-1 md:h-auto",
+  "col-span-1 h-44 md:col-span-1 md:row-span-2 md:h-auto",
+  "col-span-1 h-44 md:col-span-1 md:row-span-1 md:h-auto",
+  "col-span-1 h-44 md:col-span-2 md:row-span-1 md:h-auto",
+  "col-span-1 h-44 md:col-span-1 md:row-span-1 md:h-auto",
+  "col-span-1 h-44 md:col-span-1 md:row-span-1 md:h-auto",
+  "col-span-1 h-44 md:col-span-1 md:row-span-1 md:h-auto",
+  "col-span-1 h-44 md:col-span-2 md:row-span-1 md:h-auto",
+];
+
+// Cinematic dark gradients — used as fallback when no image is set
+export const GENRE_GRADIENTS = [
+  "linear-gradient(135deg, #7B0A02, #1A0000)",
+  "linear-gradient(135deg, #003B7A, #000D1A)",
+  "linear-gradient(135deg, #6B3600, #1A0C00)",
+  "linear-gradient(135deg, #3B0070, #0A0020)",
+  "linear-gradient(135deg, #004D2E, #001A0F)",
+  "linear-gradient(135deg, #8B3A00, #1A0C00)",
+  "linear-gradient(135deg, #004D5C, #000D10)",
+  "linear-gradient(135deg, #5C0040, #100005)",
+  "linear-gradient(135deg, #3D3D00, #0A0A00)",
+  "linear-gradient(135deg, #1A1A4A, #050508)",
+];
+
+export function GenreGridSkeleton() {
+  return (
+    <div className="grid grid-cols-2 md:grid-cols-4 gap-4 md:[grid-auto-rows:160px]">
+      {BENTO_CLASSES.map((cls, i) => (
+        <SkeletonBlock key={i} className={cn("rounded-2xl", cls)} />
+      ))}
+    </div>
+  );
+}
+
+export function GenreBentoGrid({ genres }: { genres: (Genre & { movie_count?: number })[] }) {
+  const capped = genres.slice(0, 10);
+  return (
+    <div className="grid grid-cols-2 md:grid-cols-4 gap-4 md:[grid-auto-rows:160px]">
+      {capped.map((genre, i) => {
+        const sizeClass = BENTO_CLASSES[i];
+        const hasImage = !!genre.image_url;
+        const gradient = GENRE_GRADIENTS[i % GENRE_GRADIENTS.length];
+        const isHero = i === 0;
+
+        return (
+          <Link
+            key={genre.id}
+            href={`/movies?genre_id=${genre.id}`}
+            className={cn(
+              "group relative rounded-2xl overflow-hidden transition-all duration-300",
+              "hover:scale-[1.02] hover:shadow-2xl hover:shadow-black/60",
+              sizeClass
+            )}
+          >
+            {/* Gradient base — always present, image layers on top */}
+            <div
+              className="absolute inset-0"
+              style={{ background: gradient }}
+            />
+
+            {/* Photo (if set) */}
+            {hasImage && (
+              // eslint-disable-next-line @next/next/no-img-element
+              <img
+                src={genre.image_url}
+                alt={genre.name}
+                className="absolute inset-0 w-full h-full object-cover transition-transform duration-500 group-hover:scale-110"
+              />
+            )}
+
+            {/* Dark vignette overlay for text legibility */}
+            <div className="absolute inset-0 bg-gradient-to-t from-black/85 via-black/25 to-black/5 transition-all duration-300 group-hover:from-black/90 group-hover:via-black/45" />
+
+            {/* Content pinned to bottom */}
+            <div className="absolute inset-x-0 bottom-0 flex flex-col p-4">
+              {/* Description — slides up on hover */}
+              {genre.description && (
+                <p className={cn(
+                  "text-white/75 leading-snug mb-2",
+                  "opacity-0 translate-y-2 transition-all duration-300",
+                  "group-hover:opacity-100 group-hover:translate-y-0",
+                  isHero ? "text-sm line-clamp-3" : "text-xs line-clamp-2"
+                )}>
+                  {genre.description}
+                </p>
+              )}
+
+              <span className={cn(
+                "font-outfit font-black text-white drop-shadow-lg leading-tight",
+                isHero ? "text-2xl md:text-3xl" : "text-base md:text-lg"
+              )}>
+                {genre.name}
+              </span>
+
+              {genre.movie_count !== undefined && (
+                <span className="text-[10px] text-white/50 mt-0.5 font-medium">
+                  {genre.movie_count} {genre.movie_count === 1 ? "movie" : "movies"}
+                </span>
+              )}
+            </div>
+          </Link>
+        );
+      })}
     </div>
   );
 }

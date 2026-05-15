@@ -20,6 +20,7 @@ module Api
                 id:          g.id,
                 name:        g.name,
                 description: g.description,
+                image_url:   g.image_url,
                 movie_count: g.movie_count.to_i
               }
             end

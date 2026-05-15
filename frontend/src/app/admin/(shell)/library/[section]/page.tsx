@@ -8,13 +8,14 @@ import PageHeader from "@/components/shared/PageHeader";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Card } from "@/components/ui/card";
+import { ImageUploadField } from "@/components/shared/ImageUploadField";
 import Link from "next/link";
 import { usePathname, useParams } from "next/navigation";
 import { cn } from "@/lib/utils";
 import { toast } from "sonner";
 import ConfirmDialog from "@/components/shared/ConfirmDialog";
 
-type SectionItem = { id: number; name: string; description?: string; website_url?: string };
+type SectionItem = { id: number; name: string; description?: string; website_url?: string; image_url?: string };
 
 type SectionConfig = {
   label: string;
@@ -26,6 +27,7 @@ type SectionConfig = {
   deleteFn: (id: number) => Promise<unknown>;
   hasDescription: boolean;
   hasUrl: boolean;
+  hasImage: boolean;
 };
 
 async function wrapList<K extends string>(
@@ -44,7 +46,7 @@ const SECTION_MAP: Record<string, SectionConfig> = {
     createFn: (d) => apiClient.genres.create(d),
     updateFn: (id, d) => apiClient.genres.update(id, d),
     deleteFn: (id) => apiClient.genres.delete(id),
-    hasDescription: true, hasUrl: false,
+    hasDescription: true, hasUrl: false, hasImage: true,
   },
   categories: {
     label: "Categories", singular: "Category", queryKey: "categories",
@@ -52,7 +54,7 @@ const SECTION_MAP: Record<string, SectionConfig> = {
     createFn: (d) => apiClient.categories.create(d),
     updateFn: (id, d) => apiClient.categories.update(id, d),
     deleteFn: (id) => apiClient.categories.delete(id),
-    hasDescription: false, hasUrl: false,
+    hasDescription: true, hasUrl: false, hasImage: true,
   },
   qualities: {
     label: "Qualities", singular: "Quality", queryKey: "qualities",
@@ -60,7 +62,7 @@ const SECTION_MAP: Record<string, SectionConfig> = {
     createFn: (d) => apiClient.qualities.create(d),
     updateFn: (id, d) => apiClient.qualities.update(id, d),
     deleteFn: (id) => apiClient.qualities.delete(id),
-    hasDescription: false, hasUrl: false,
+    hasDescription: false, hasUrl: false, hasImage: false,
   },
   "disk-formats": {
     label: "Disk Formats", singular: "Disk Format", queryKey: "disk_formats",
@@ -68,7 +70,7 @@ const SECTION_MAP: Record<string, SectionConfig> = {
     createFn: (d) => apiClient.diskFormats.create(d),
     updateFn: (id, d) => apiClient.diskFormats.update(id, d),
     deleteFn: (id) => apiClient.diskFormats.delete(id),
-    hasDescription: false, hasUrl: false,
+    hasDescription: false, hasUrl: false, hasImage: false,
   },
   reviewers: {
     label: "Reviewers", singular: "Reviewer", queryKey: "reviewers",
@@ -76,7 +78,7 @@ const SECTION_MAP: Record<string, SectionConfig> = {
     createFn: (d) => apiClient.reviewers.create(d),
     updateFn: (id, d) => apiClient.reviewers.update(id, d),
     deleteFn: (id) => apiClient.reviewers.delete(id),
-    hasDescription: false, hasUrl: true,
+    hasDescription: false, hasUrl: true, hasImage: false,
   },
 };
 
@@ -101,6 +103,7 @@ export default function LibraryPage() {
   const [formName, setFormName] = useState("");
   const [formDescription, setFormDescription] = useState("");
   const [formUrl, setFormUrl] = useState("");
+  const [formImageUrl, setFormImageUrl] = useState("");
   const [saving, setSaving] = useState(false);
 
   const { data, isLoading } = useQuery({
@@ -128,6 +131,7 @@ export default function LibraryPage() {
     setFormName(item.name);
     setFormDescription(item.description ?? "");
     setFormUrl(item.website_url ?? "");
+    setFormImageUrl(item.image_url ?? "");
   };
 
   const startCreate = () => {
@@ -136,6 +140,7 @@ export default function LibraryPage() {
     setFormName("");
     setFormDescription("");
     setFormUrl("");
+    setFormImageUrl("");
   };
 
   const cancelForm = () => {
@@ -147,6 +152,7 @@ export default function LibraryPage() {
     const p: Record<string, unknown> = { name: formName.trim() };
     if (config.hasDescription) p.description = formDescription.trim();
     if (config.hasUrl) p.website_url = formUrl.trim();
+    if (config.hasImage) p.image_url = formImageUrl.trim();
     return p;
   };
 
@@ -356,6 +362,15 @@ export default function LibraryPage() {
                       type="url"
                     />
                   </div>
+                )}
+
+                {config.hasImage && (
+                  <ImageUploadField
+                    label="Cover Image"
+                    value={formImageUrl}
+                    onChange={setFormImageUrl}
+                    aspectRatio="backdrop"
+                  />
                 )}
               </div>
 

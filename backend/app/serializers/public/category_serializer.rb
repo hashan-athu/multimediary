@@ -3,6 +3,6 @@
 module Public
   class CategorySerializer < Blueprinter::Base
     identifier :id
-    fields :name
+    fields :name, :description, :image_url
   end
 end

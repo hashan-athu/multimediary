@@ -9,8 +9,8 @@ export interface User {
   created_at: string;
 }
 
-export interface Category   { id: number; name: string; }
-export interface Genre      { id: number; name: string; description?: string; }
+export interface Category   { id: number; name: string; description?: string; image_url?: string; }
+export interface Genre      { id: number; name: string; description?: string; image_url?: string; }
 export interface Quality    { id: number; name: string; }
 export interface DiskFormat { id: number; name: string; }
 export interface Reviewer   { id: number; name: string; website_url?: string; }

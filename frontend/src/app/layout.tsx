@@ -4,6 +4,7 @@ import "@/styles/theme.css";
 import QueryProvider from "@/context/QueryProvider";
 import { Toaster } from "@/components/ui/sonner";
 import { TooltipProvider } from "@/components/ui/tooltip";
+import CookieBanner from "@/components/CookieBanner";
 
 const inter = Inter({
   variable: "--font-inter",
@@ -31,6 +32,7 @@ export default function RootLayout({
         <QueryProvider>
           <TooltipProvider>
             {children}
+            <CookieBanner />
             <Toaster richColors closeButton position="top-right" />
           </TooltipProvider>
         </QueryProvider>

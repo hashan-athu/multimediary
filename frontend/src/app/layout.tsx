@@ -5,9 +5,9 @@ import QueryProvider from "@/context/QueryProvider";
 import { Toaster } from "@/components/ui/sonner";
 import { TooltipProvider } from "@/components/ui/tooltip";
 import CookieBanner from "@/components/CookieBanner";
-
-//Vercel Analytics Import
 import { Analytics } from "@vercel/analytics/next";
+import { SpeedInsights } from "@vercel/speed-insights/next";
+
 
 const inter = Inter({
   variable: "--font-inter",
@@ -84,6 +84,7 @@ export default function RootLayout({
             {children}
             <CookieBanner />
             <Toaster richColors closeButton position="top-right" />
+            <Analytics />
           </TooltipProvider>
         </QueryProvider>
       </body>

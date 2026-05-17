@@ -5,6 +5,10 @@ import { Film, ExternalLink } from "lucide-react";
 import { useCookieStore } from "@/store/cookieStore";
 import { usePathname } from "next/navigation";
 import { cn } from "@/lib/utils";
+import Image from "next/image";
+
+// Image imports
+import LogoFull from "@/assets/images/logo/multimediary-logo-desktop.svg";
 
 const DOCS_URL =
   process.env.NEXT_PUBLIC_DOCS_URL || "http://localhost:3002/docs/";
@@ -42,22 +46,25 @@ export default function Footer() {
         {/* Brand */}
         <div className="col-span-2 md:col-span-1 space-y-6">
           <Link href="/" className="flex items-center gap-2 group w-fit">
-            <div className="w-10 h-10 bg-brand-primary rounded-xl flex items-center justify-center shadow-[0_0_15px_rgba(229,9,20,0.3)]">
-              <Film className="text-white" size={22} />
-            </div>
-            <span className="font-outfit text-xl font-bold tracking-tight text-white">
-              MULTI<span className="text-brand-primary">MEDIARY</span>
-            </span>
+            <Image
+              src={LogoFull}
+              alt="Multimediary logo"
+              className="h-8 w-auto"
+              width={386}
+              height={40}
+            />
           </Link>
           <p className="text-text-dim leading-relaxed text-sm">
-            Your ultimate physical media library companion. Organise, search, and discover your
-            collection with a cinematic experience.
+            Your ultimate physical media library companion. Organise, search,
+            and discover your collection with a cinematic experience.
           </p>
         </div>
 
         {/* Explore */}
         <div className="space-y-5">
-          <h3 className="text-white font-bold text-sm uppercase tracking-wider">Explore</h3>
+          <h3 className="text-white font-bold text-sm uppercase tracking-wider">
+            Explore
+          </h3>
           <nav className="flex flex-col gap-3">
             {exploreLinks.map((link) => {
               const active = isActive(link.href, link.exact);
@@ -67,7 +74,9 @@ export default function Footer() {
                   href={link.href}
                   className={cn(
                     "text-sm transition-colors flex items-center gap-1.5",
-                    active ? "text-white font-semibold" : "text-text-dim hover:text-white",
+                    active
+                      ? "text-white font-semibold"
+                      : "text-text-dim hover:text-white",
                   )}
                 >
                   {active && (
@@ -82,7 +91,9 @@ export default function Footer() {
 
         {/* Admin */}
         <div className="space-y-5">
-          <h3 className="text-white font-bold text-sm uppercase tracking-wider">Admin</h3>
+          <h3 className="text-white font-bold text-sm uppercase tracking-wider">
+            Admin
+          </h3>
           <nav className="flex flex-col gap-3">
             <a
               href={DOCS_URL}
@@ -91,7 +102,10 @@ export default function Footer() {
               className="text-text-dim hover:text-white transition-colors text-sm flex items-center gap-1.5 group"
             >
               Documentation
-              <ExternalLink size={11} className="opacity-50 group-hover:opacity-100 transition-opacity" />
+              <ExternalLink
+                size={11}
+                className="opacity-50 group-hover:opacity-100 transition-opacity"
+              />
             </a>
             {adminLinks.map((link) => (
               <Link
@@ -107,7 +121,9 @@ export default function Footer() {
 
         {/* Legal */}
         <div className="space-y-5">
-          <h3 className="text-white font-bold text-sm uppercase tracking-wider">Legal</h3>
+          <h3 className="text-white font-bold text-sm uppercase tracking-wider">
+            Legal
+          </h3>
           <nav className="flex flex-col gap-3">
             {legalLinks.map((link) => (
               <Link
@@ -126,7 +142,10 @@ export default function Footer() {
       <div className="max-w-7xl mx-auto pt-8 border-t border-white/5 flex flex-col md:flex-row justify-between items-center gap-4 text-xs font-bold text-text-muted">
         <p>© {new Date().getFullYear()} MULTIMEDIARY. ALL RIGHTS RESERVED.</p>
         <div className="flex items-center gap-6">
-          <Link href="/privacy-policy" className="hover:text-text-dim transition-colors">
+          <Link
+            href="/privacy-policy"
+            className="hover:text-text-dim transition-colors"
+          >
             Privacy
           </Link>
           <Link href="/terms" className="hover:text-text-dim transition-colors">

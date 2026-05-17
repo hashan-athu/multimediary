@@ -6,6 +6,9 @@ import { Toaster } from "@/components/ui/sonner";
 import { TooltipProvider } from "@/components/ui/tooltip";
 import CookieBanner from "@/components/CookieBanner";
 
+//Vercel Analytics Import
+import { Analytics } from "@vercel/analytics/next";
+
 const inter = Inter({
   variable: "--font-inter",
   subsets: ["latin"],

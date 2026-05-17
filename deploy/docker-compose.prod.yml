@@ -106,7 +106,9 @@ services:
           memory: 400M
 
   # ── Docs (Nginx serving the static Docusaurus build) ────────────────────────
+  # Activate with: docker compose --profile docs up
   docs:
+    profiles: ["docs"]
     image: ${DOCS_IMAGE:-ghcr.io/hashan-athu/multimediary/docs:dev}
     restart: unless-stopped
     expose:

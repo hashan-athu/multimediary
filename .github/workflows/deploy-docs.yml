@@ -1,0 +1,93 @@
+name: Deploy Docs → Oracle VM
+
+on:
+  workflow_dispatch:
+  push:
+    branches: [dev]
+    paths:
+      - "docs/**"
+      - ".github/workflows/deploy-docs.yml"
+
+env:
+  REGISTRY: ghcr.io
+  IMAGE_NAME: ${{ github.repository }}/docs
+
+jobs:
+  # ─────────────────────────────────────────────
+  # 1. Build & push image to GHCR
+  # ─────────────────────────────────────────────
+  build-and-push:
+    name: Build & Push Docs Image
+    runs-on: ubuntu-latest
+    permissions:
+      contents: read
+      packages: write
+
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v4
+
+      - name: Set up Docker Buildx
+        uses: docker/setup-buildx-action@v3
+
+      - name: Log in to GitHub Container Registry
+        uses: docker/login-action@v3
+        with:
+          registry: ${{ env.REGISTRY }}
+          username: ${{ github.actor }}
+          password: ${{ secrets.GITHUB_TOKEN }}
+
+      - name: Extract Docker metadata
+        id: meta
+        uses: docker/metadata-action@v5
+        with:
+          images: ${{ env.REGISTRY }}/${{ env.IMAGE_NAME }}
+          tags: |
+            type=raw,value=dev
+            type=sha,prefix=sha-
+
+      - name: Build and push Docs image
+        uses: docker/build-push-action@v5
+        with:
+          context: ./docs
+          file: ./docs/Dockerfile
+          platforms: linux/amd64
+          push: true
+          tags: ${{ steps.meta.outputs.tags }}
+          labels: ${{ steps.meta.outputs.labels }}
+          cache-from: type=gha
+          cache-to: type=gha,mode=max
+
+  # ─────────────────────────────────────────────
+  # 2. Deploy to Oracle VM
+  # ─────────────────────────────────────────────
+  deploy:
+    name: Deploy to Oracle VM
+    runs-on: ubuntu-latest
+    needs: build-and-push
+    environment: dev
+    permissions:
+      contents: read
+      packages: read
+
+    steps:
+      - name: Pull new image and restart docs container
+        uses: appleboy/ssh-action@v1.0.3
+        env:
+          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+          GH_ACTOR: ${{ github.actor }}
+          DOCS_IMAGE: ${{ env.REGISTRY }}/${{ env.IMAGE_NAME }}:dev
+        with:
+          host: ${{ secrets.ORACLE_VM_HOST }}
+          username: ${{ secrets.ORACLE_VM_USER }}
+          key: ${{ secrets.ORACLE_VM_SSH_KEY }}
+          envs: GH_TOKEN,GH_ACTOR,DOCS_IMAGE
+          command_timeout: 5m
+          script: |
+            set -euo pipefail
+            echo "${GH_TOKEN}" | docker login ghcr.io -u "${GH_ACTOR}" --password-stdin
+            echo "Pulling: ${DOCS_IMAGE}"
+            docker pull "${DOCS_IMAGE}"
+            echo "Restarting docs container..."
+            docker restart multimediary-docs-1
+            echo "Docs deployed."

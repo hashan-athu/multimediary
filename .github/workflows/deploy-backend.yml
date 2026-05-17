@@ -12,6 +12,7 @@ on:
 env:
   REGISTRY: ghcr.io
   IMAGE_NAME: ${{ github.repository }}/backend
+  DOCS_IMAGE_NAME: ${{ github.repository }}/docs
 
 jobs:
   # ─────────────────────────────────────────────
@@ -130,11 +131,12 @@ jobs:
           GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
           GH_ACTOR: ${{ github.actor }}
           BACKEND_IMAGE: ${{ env.REGISTRY }}/${{ env.IMAGE_NAME }}:dev
+          DOCS_IMAGE: ${{ env.REGISTRY }}/${{ env.DOCS_IMAGE_NAME }}:dev
         with:
           host: ${{ secrets.ORACLE_VM_HOST }}
           username: ${{ secrets.ORACLE_VM_USER }}
           key: ${{ secrets.ORACLE_VM_SSH_KEY }}
-          envs: GH_TOKEN,GH_ACTOR,BACKEND_IMAGE
+          envs: GH_TOKEN,GH_ACTOR,BACKEND_IMAGE,DOCS_IMAGE
           # Tight timeout — pull only; old containers keep serving during this step
           command_timeout: 8m
           script: |
@@ -143,6 +145,8 @@ jobs:
             echo "${GH_TOKEN}" | docker login ghcr.io -u "${GH_ACTOR}" --password-stdin
             echo "Pulling: ${BACKEND_IMAGE}"
             docker pull "${BACKEND_IMAGE}"
+            echo "Pulling: ${DOCS_IMAGE}"
+            docker pull "${DOCS_IMAGE}" || echo "Docs image not yet published — skipping."
             echo "Pull complete."
 
       # ── Write env file and swap containers ──────────────────────────────────
@@ -151,6 +155,7 @@ jobs:
         env:
           RAILS_MASTER_KEY: ${{ secrets.RAILS_MASTER_KEY }}
           BACKEND_IMAGE: ${{ env.REGISTRY }}/${{ env.IMAGE_NAME }}:dev
+          DOCS_IMAGE: ${{ env.REGISTRY }}/${{ env.DOCS_IMAGE_NAME }}:dev
           POSTGRES_USER: ${{ secrets.POSTGRES_USER }}
           POSTGRES_PASSWORD: ${{ secrets.POSTGRES_PASSWORD }}
           POSTGRES_DB: ${{ secrets.POSTGRES_DB }}
@@ -164,7 +169,7 @@ jobs:
           host: ${{ secrets.ORACLE_VM_HOST }}
           username: ${{ secrets.ORACLE_VM_USER }}
           key: ${{ secrets.ORACLE_VM_SSH_KEY }}
-          envs: RAILS_MASTER_KEY,BACKEND_IMAGE,POSTGRES_USER,POSTGRES_PASSWORD,POSTGRES_DB,POSTGRES_CACHE_DB,POSTGRES_QUEUE_DB,POSTGRES_CABLE_DB,TMDB_API_KEY,CORS_ALLOWED_ORIGINS,BACKEND_DOMAIN
+          envs: RAILS_MASTER_KEY,BACKEND_IMAGE,DOCS_IMAGE,POSTGRES_USER,POSTGRES_PASSWORD,POSTGRES_DB,POSTGRES_CACHE_DB,POSTGRES_QUEUE_DB,POSTGRES_CABLE_DB,TMDB_API_KEY,CORS_ALLOWED_ORIGINS,BACKEND_DOMAIN
           # Only swap + migrate + health-check; pull already finished above
           command_timeout: 6m
           script: |
@@ -197,12 +202,31 @@ jobs:
             } > .env.production
 
             export BACKEND_IMAGE="${BACKEND_IMAGE}"
+            export DOCS_IMAGE="${DOCS_IMAGE}"
 
             echo "Validating compose config..."
             docker compose --env-file .env.production -f docker-compose.prod.yml config --quiet
 
+            echo "Ensuring db is up and healthy..."
+            docker compose --env-file .env.production -f docker-compose.prod.yml up -d db
+            for i in $(seq 1 12); do
+              health=$(docker inspect --format='{{.State.Health.Status}}' multimediary-db-1 2>/dev/null || echo "unknown")
+              [ "${health}" = "healthy" ] && break
+              echo "  db health: ${health} — waiting 5s..."
+              sleep 5
+            done
+
+            echo "Running db-init (creates missing databases idempotently)..."
+            docker compose --env-file .env.production -f docker-compose.prod.yml run --rm db-init
+
             echo "Restarting containers..."
-            docker compose --env-file .env.production -f docker-compose.prod.yml up -d --remove-orphans
+            if docker image inspect "${DOCS_IMAGE}" >/dev/null 2>&1; then
+              echo "Docs image present — starting all services."
+              docker compose --env-file .env.production -f docker-compose.prod.yml up -d --remove-orphans
+            else
+              echo "Docs image not yet available — starting without docs service."
+              docker compose --env-file .env.production -f docker-compose.prod.yml up -d --remove-orphans --scale docs=0
+            fi
 
             echo "Waiting for backend to pass health check..."
             for i in $(seq 1 24); do

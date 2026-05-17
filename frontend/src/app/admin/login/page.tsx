@@ -20,6 +20,12 @@ import { toast } from "sonner";
 import { useAuthStore } from "@/store/authStore";
 import { apiClient } from "@/lib/adminApi";
 
+function setAuthCookie(token: string) {
+  if (typeof document !== "undefined") {
+    document.cookie = `mm_token=${encodeURIComponent(token)}; path=/; max-age=${60 * 60 * 24 * 7}; SameSite=Lax`;
+  }
+}
+
 const loginSchema = z.object({
   email: z.string().email("Invalid email address"),
   password: z.string().min(6, "Password must be at least 6 characters"),
@@ -60,7 +66,7 @@ export default function LoginPage() {
       if (userData) setUser(userData);
 
       // Write cookie for middleware (readable in Edge runtime)
-      document.cookie = `mm_token=${encodeURIComponent(token)}; path=/; max-age=${60 * 60 * 24 * 7}; SameSite=Lax`;
+      setAuthCookie(token);
 
       toast.success("Welcome back!");
       router.push("/admin/dashboard");

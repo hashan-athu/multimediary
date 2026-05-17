@@ -22,7 +22,7 @@ import { apiClient } from "@/lib/adminApi";
 
 function setAuthCookie(token: string) {
   if (typeof document !== "undefined") {
-    document.cookie = `mm_token=${encodeURIComponent(token)}; path=/; max-age=${60 * 60 * 24 * 7}; SameSite=Lax`;
+    document.cookie = `mm_token=${encodeURIComponent(token)}; path=/; max-age=${60 * 60 * 24 * 7}; SameSite=Lax; Secure`;
   }
 }
 

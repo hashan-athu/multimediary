@@ -112,9 +112,10 @@ create_movie(
 )
 
 # 7. Users
+admin_password = ENV.fetch("SEED_ADMIN_PASSWORD") { raise "Set SEED_ADMIN_PASSWORD before seeding in production" }
 User.find_or_create_by!(email: "admin@example.com") do |user|
-  user.password = "password123"
-  user.password_confirmation = "password123"
+  user.password = admin_password
+  user.password_confirmation = admin_password
   user.role = "super_admin"
 end
 puts "Created/Found Super Admin: admin@example.com"

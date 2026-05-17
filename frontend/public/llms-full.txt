@@ -1,0 +1,79 @@
+# Multimediary — Full Site Description for Language Models
+
+## What Is Multimediary?
+
+Multimediary is a personal physical media library management system. It is a self-hosted web application that allows its operator to catalogue, browse, and manage a collection of physical movie media — DVDs, Blu-rays, and movies stored on external HDDs.
+
+The site has two parts:
+1. A public-facing cinematic browser (dark theme) where anyone can explore the catalogue
+2. A private admin panel (requires login) for managing the collection
+
+## The Collection
+
+The library contains hundreds of movies spanning several decades. Each movie record stores:
+- Title, year, language, country of origin
+- Runtime, file size (GB), version
+- Synopsis (description) and story
+- Tagline
+- Poster image and backdrop/banner image (sourced from TMDb)
+- Physical disk location (which HDD or disc it lives on, storage type, format)
+- Genre tags (Action, Drama, Thriller, etc.)
+- Category (Movies, TV Series, etc.)
+- Quality tags (1080p, 4K, etc.)
+- Director and cast with profile images
+- Critical ratings from external reviewers (e.g. IMDb score out of 10)
+- TMDb ID for cross-referencing
+
+## Technical Stack
+
+- **Frontend**: Next.js 16 (React 19), Tailwind CSS v4, TanStack Query, Zustand, Framer Motion
+- **Backend**: Ruby on Rails 8.1 API-only, PostgreSQL, Devise JWT, CanCanCan, Blueprinter, Ransack, Kaminari
+- **Metadata source**: TMDb (The Movie Database) API for auto-importing movie details, posters, cast
+- **Deployment**: Self-hosted on a private server; Kamal + Docker
+
+## Public API Endpoints
+
+All endpoints are under `/api/v1/public/` and require no authentication.
+
+### Movies
+- `GET /api/v1/public/movies` — paginated list; supports `?q[name_cont]=`, `?q[category_id_eq]=`, `?q[genre_id_eq]=`, `?q[year_eq]=`, `?sort=name&direction=asc`
+- `GET /api/v1/public/movies/{id}` — full detail including cast, director, ratings, disk
+- `GET /api/v1/public/movies/recent?count=N` — N most recently added movies (max 48)
+- `GET /api/v1/public/movies/random?count=N` — N random movies (max 24)
+
+### People
+- `GET /api/v1/public/actors` — actors who appear in ≥1 movie; supports `?q[first_name_or_last_name_cont]=`
+- `GET /api/v1/public/actors/{id}` — actor profile + filmography
+- `GET /api/v1/public/directors/{id}` — director profile + filmography
+
+### Taxonomy
+- `GET /api/v1/public/categories` — all categories with movie counts
+- `GET /api/v1/public/categories/{id}` — category detail with paginated movies
+- `GET /api/v1/public/genres` — all genres with movie counts
+- `GET /api/v1/public/genres/{id}` — genre detail with paginated movies
+
+### Inventory
+- `GET /api/v1/public/disks` — physical disks that contain ≥1 movie
+- `GET /api/v1/public/disks/{id}` — disk detail with all movies stored on it
+
+### Utility
+- `GET /api/v1/public/search?q={term}&limit=N` — cross-resource search across movies, actors, directors
+- `GET /api/v1/public/stats` — collection totals (movies, actors, directors, disks, storage GB, year range), breakdown by category and format, top genres
+
+## Admin Panel (Private)
+
+The admin panel at `/admin` requires a JWT login. It allows authorised users to:
+- Add, edit, delete movies (manually or via TMDb auto-import by title)
+- Manage actors, directors, genres, categories, qualities, disks, disk formats, reviewers
+- Manage user accounts and roles (super_admin, admin, editor, analyst)
+- View a dashboard with collection statistics and recently added movies
+
+Admin authentication uses Devise JWT with single-session enforcement — only one active session per user is allowed at a time.
+
+## Privacy and Scope
+
+- No user accounts for public visitors
+- No tracking beyond standard server logs
+- No streaming — this is a catalogue only
+- Collection is entirely personal/private media owned by the operator
+- Not affiliated with any studio, distributor, or streaming service

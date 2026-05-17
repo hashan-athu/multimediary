@@ -1,0 +1,15 @@
+/* TEAM */
+Developer & Designer: Hashan Athurugiriya
+Contact: enfectiondev [at] gmail [dot] com
+
+/* SITE */
+Name: Multimediary
+Description: Personal physical media library management system
+Last update: 2026-05-17
+Language: English
+
+/* TECHNOLOGY COLOPHON */
+Frontend: Next.js, React, Tailwind CSS, Framer Motion
+Backend: Ruby on Rails, PostgreSQL
+Metadata: TMDb (The Movie Database)
+Deployed with: Kamal, Docker

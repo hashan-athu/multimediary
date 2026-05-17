@@ -1,10 +1,13 @@
 "use client";
 
 import Link from "next/link";
-import { Film } from "lucide-react";
+import { Film, ExternalLink } from "lucide-react";
 import { useCookieStore } from "@/store/cookieStore";
 import { usePathname } from "next/navigation";
 import { cn } from "@/lib/utils";
+
+const DOCS_URL =
+  process.env.NEXT_PUBLIC_DOCS_URL || "http://localhost:3002/docs/";
 
 const exploreLinks = [
   { name: "Home", href: "/", exact: true },
@@ -81,6 +84,15 @@ export default function Footer() {
         <div className="space-y-5">
           <h3 className="text-white font-bold text-sm uppercase tracking-wider">Admin</h3>
           <nav className="flex flex-col gap-3">
+            <a
+              href={DOCS_URL}
+              target="_blank"
+              rel="noopener noreferrer"
+              className="text-text-dim hover:text-white transition-colors text-sm flex items-center gap-1.5 group"
+            >
+              Documentation
+              <ExternalLink size={11} className="opacity-50 group-hover:opacity-100 transition-opacity" />
+            </a>
             {adminLinks.map((link) => (
               <Link
                 key={link.name}

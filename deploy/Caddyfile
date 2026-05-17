@@ -1,5 +1,13 @@
 {$BACKEND_DOMAIN} {
-    reverse_proxy backend:80
+    # Documentation — Nginx serving the static Docusaurus build
+    handle /docs/* {
+        reverse_proxy docs:80
+    }
+
+    # Rails API — everything else
+    handle {
+        reverse_proxy backend:80
+    }
 
     encode gzip
 
@@ -7,7 +15,8 @@
         -Server
         Strict-Transport-Security "max-age=31536000; includeSubDomains; preload"
         X-Content-Type-Options "nosniff"
-        X-Frame-Options "DENY"
+        # Allow docs to be embedded in iframes from the same origin
+        X-Frame-Options "SAMEORIGIN"
     }
 
     log {

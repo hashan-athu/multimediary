@@ -1,0 +1,34 @@
+# Multimediary
+
+> A personal physical media library management system for cataloguing DVD, Blu-ray, and HDD movie collections with TMDb metadata integration.
+
+Multimediary is a private collection browser — not a streaming service or commercial platform. It helps one person catalogue and browse their physical movie library. All movies listed are physical media titles (DVDs, Blu-rays) stored on HDDs.
+
+## Public Pages
+
+- [Home](/): Hero carousel of featured movies, browse by genre/category, and collection stats
+- [Movies](/movies): Full catalogue with filter by genre, category, year, and text search
+- [Movie Detail](/movies/{id}): Full movie info — synopsis, cast, director, ratings, disk location, file size
+- [Actors](/actors): Browse actors who appear in the collection
+- [Actor Detail](/actors/{id}): Actor profile with full filmography from the collection
+- [Directors](/directors/{id}): Director profile with filmography from the collection
+- [Categories](/categories): Browse movies by category (Movies, TV Series, etc.)
+- [Category Detail](/categories/{id}): All movies in a given category
+- [Genres](/genres): Browse movies by genre (Action, Drama, Thriller, etc.)
+- [Genre Detail](/genres/{id}): All movies in a given genre
+- [Disks](/disks/{id}): Physical disk inventory — all movies on a specific HDD or disc
+
+## What This Site Is Not
+
+- Not a streaming platform — no video content is served
+- Not a public movie database — only titles physically owned by the operator
+- Not open for public registration — admin panel is private
+
+## API
+
+A read-only public JSON API is available at `/api/v1/public/`. Key endpoints:
+- `GET /api/v1/public/movies` — paginated movie list with Ransack filtering
+- `GET /api/v1/public/movies/{id}` — full movie detail
+- `GET /api/v1/public/actors` — actor list
+- `GET /api/v1/public/stats` — collection totals and top genres
+- `GET /api/v1/public/search?q={term}` — cross-resource search

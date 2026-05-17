@@ -105,6 +105,19 @@ services:
         limits:
           memory: 400M
 
+  # ── Docs (Nginx serving the static Docusaurus build) ────────────────────────
+  docs:
+    image: ${DOCS_IMAGE:-ghcr.io/hashan-athu/multimediary/docs:dev}
+    restart: unless-stopped
+    expose:
+      - "80"
+    networks:
+      - backend-net
+    deploy:
+      resources:
+        limits:
+          memory: 32M
+
   # ── Caddy (reverse proxy + automatic HTTPS) ──────────────────────────────────
   caddy:
     image: caddy:2-alpine

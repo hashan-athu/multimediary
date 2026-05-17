@@ -108,13 +108,13 @@ export const apiClient = {
   },
 
   stats: async (): Promise<{
-    stats: {
+    totals: {
       movies: number;
       disks: number;
       actors: number;
       directors: number;
       storage_gb: number;
-      year_range: { min: number; max: number };
+      year_range: string | null;
     };
     by_category: { name: string; count: number }[];
     by_format: { name: string; count: number }[];

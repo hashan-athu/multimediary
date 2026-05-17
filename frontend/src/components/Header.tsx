@@ -5,7 +5,7 @@ import Link from "next/link";
 import { Search, Menu, X, Film } from "lucide-react";
 import { cn } from "@/lib/utils";
 import { motion, AnimatePresence } from "framer-motion";
-import { useRouter } from "next/navigation";
+import { useRouter, usePathname } from "next/navigation";
 import Image from "next/image";
 
 // Image imports
@@ -14,6 +14,7 @@ import LogoSmall from "@/assets/images/logo/logo-md.png";
 
 export default function Header() {
   const router = useRouter();
+  const pathname = usePathname();
   const [isScrolled, setIsScrolled] = useState(false);
   const [isMobileMenuOpen, setIsMobileMenuOpen] = useState(false);
   const [isSearchOpen, setIsSearchOpen] = useState(false);
@@ -31,11 +32,14 @@ export default function Header() {
   }, [isSearchOpen]);
 
   const navLinks = [
-    { name: "Home", href: "/" },
+    { name: "Home", href: "/", exact: true },
     { name: "Movies", href: "/movies" },
     { name: "Categories", href: "/categories" },
     { name: "Actors", href: "/actors" },
   ];
+
+  const isActive = (href: string, exact?: boolean) =>
+    exact ? pathname === href : pathname === href || pathname.startsWith(href + "/");
 
   const handleSearch = (e: React.FormEvent) => {
     e.preventDefault();
@@ -75,16 +79,27 @@ export default function Header() {
           </Link>
 
           <nav className="hidden lg:flex items-center gap-8">
-            {navLinks.map((link) => (
-              <Link
-                key={link.name}
-                href={link.href}
-                className="text-sm font-semibold text-text-dim hover:text-white transition-colors relative group"
-              >
-                {link.name}
-                <span className="absolute -bottom-1 left-0 w-0 h-0.5 bg-brand-primary transition-all group-hover:w-full" />
-              </Link>
-            ))}
+            {navLinks.map((link) => {
+              const active = isActive(link.href, link.exact);
+              return (
+                <Link
+                  key={link.name}
+                  href={link.href}
+                  className={cn(
+                    "text-sm font-semibold transition-colors relative group",
+                    active ? "text-white" : "text-text-dim hover:text-white",
+                  )}
+                >
+                  {link.name}
+                  <span
+                    className={cn(
+                      "absolute -bottom-1 left-0 h-0.5 bg-brand-primary transition-all",
+                      active ? "w-full" : "w-0 group-hover:w-full",
+                    )}
+                  />
+                </Link>
+              );
+            })}
           </nav>
         </div>
 
@@ -159,16 +174,25 @@ export default function Header() {
             exit={{ opacity: 0, y: -20 }}
             className="lg:hidden absolute top-full left-0 right-0 bg-bg-surface border-b border-white/5 p-6 flex flex-col gap-4 shadow-2xl"
           >
-            {navLinks.map((link) => (
-              <Link
-                key={link.name}
-                href={link.href}
-                onClick={() => setIsMobileMenuOpen(false)}
-                className="text-lg font-bold text-text-dim hover:text-white"
-              >
-                {link.name}
-              </Link>
-            ))}
+            {navLinks.map((link) => {
+              const active = isActive(link.href, link.exact);
+              return (
+                <Link
+                  key={link.name}
+                  href={link.href}
+                  onClick={() => setIsMobileMenuOpen(false)}
+                  className={cn(
+                    "text-lg font-bold transition-colors",
+                    active ? "text-white" : "text-text-dim hover:text-white",
+                  )}
+                >
+                  {link.name}
+                  {active && (
+                    <span className="ml-2 inline-block w-1.5 h-1.5 rounded-full bg-brand-primary align-middle" />
+                  )}
+                </Link>
+              );
+            })}
             <form onSubmit={handleSearch} className="mt-2">
               <input
                 type="text"

@@ -3,9 +3,11 @@
 import Link from "next/link";
 import { Film } from "lucide-react";
 import { useCookieStore } from "@/store/cookieStore";
+import { usePathname } from "next/navigation";
+import { cn } from "@/lib/utils";
 
 const exploreLinks = [
-  { name: "Home", href: "/" },
+  { name: "Home", href: "/", exact: true },
   { name: "All Movies", href: "/movies" },
   { name: "Categories", href: "/categories" },
   { name: "Genres", href: "/genres" },
@@ -26,6 +28,10 @@ const legalLinks = [
 
 export default function Footer() {
   const openPreferences = useCookieStore((s) => s.openPreferences);
+  const pathname = usePathname();
+
+  const isActive = (href: string, exact?: boolean) =>
+    exact ? pathname === href : pathname === href || pathname.startsWith(href + "/");
 
   return (
     <footer className="bg-bg-surface border-t border-white/5 pt-20 pb-10 px-6 md:px-12 mt-20">
@@ -50,15 +56,24 @@ export default function Footer() {
         <div className="space-y-5">
           <h3 className="text-white font-bold text-sm uppercase tracking-wider">Explore</h3>
           <nav className="flex flex-col gap-3">
-            {exploreLinks.map((link) => (
-              <Link
-                key={link.name}
-                href={link.href}
-                className="text-text-dim hover:text-white transition-colors text-sm"
-              >
-                {link.name}
-              </Link>
-            ))}
+            {exploreLinks.map((link) => {
+              const active = isActive(link.href, link.exact);
+              return (
+                <Link
+                  key={link.name}
+                  href={link.href}
+                  className={cn(
+                    "text-sm transition-colors flex items-center gap-1.5",
+                    active ? "text-white font-semibold" : "text-text-dim hover:text-white",
+                  )}
+                >
+                  {active && (
+                    <span className="inline-block w-1 h-1 rounded-full bg-brand-primary flex-shrink-0" />
+                  )}
+                  {link.name}
+                </Link>
+              );
+            })}
           </nav>
         </div>
 
